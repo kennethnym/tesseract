@@ -1,0 +1,5 @@
+{
+  "databasePath": "./data.sqlite",
+  "templateDirectoryPath": "./templates",
+  "hostName": "lycoris.lab"
+}
