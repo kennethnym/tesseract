@@ -6,17 +6,24 @@ type SSHProxy struct {
 	internalPorts map[int]int
 
 	connections map[int]*proxyConnection
+
+	closedConnections chan *proxyConnection
 }
 
 func New() *SSHProxy {
-	return &SSHProxy{
-		internalPorts: map[int]int{},
-		connections:   map[int]*proxyConnection{},
+	p := &SSHProxy{
+		internalPorts:     map[int]int{},
+		connections:       map[int]*proxyConnection{},
+		closedConnections: make(chan *proxyConnection),
 	}
+
+	go p.handleClosedConnections()
+
+	return p
 }
 
 func (p *SSHProxy) NewProxyEntryTo(toPort int) error {
-	c, err := newProxyConnection(toPort)
+	c, err := newProxyConnection(toPort, p.closedConnections)
 	if err != nil {
 		return err
 	}
@@ -34,4 +41,11 @@ func (p *SSHProxy) FindExternalPort(internalPort int) int {
 		return port
 	}
 	return -1
+}
+
+func (p *SSHProxy) handleClosedConnections() {
+	for c := range p.closedConnections {
+		delete(p.internalPorts, c.internalPort)
+		delete(p.connections, c.internalPort)
+	}
 }

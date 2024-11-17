@@ -11,9 +11,12 @@ type proxyConnection struct {
 	internalPort int
 	externalPort int
 	listener     net.Listener
+
+	// closedChan is used to notify that the proxy connection is closed
+	closedChan chan<- *proxyConnection
 }
 
-func newProxyConnection(toPort int) (*proxyConnection, error) {
+func newProxyConnection(toPort int, closedChan chan *proxyConnection) (*proxyConnection, error) {
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return nil, err
@@ -25,6 +28,7 @@ func newProxyConnection(toPort int) (*proxyConnection, error) {
 		internalPort: toPort,
 		externalPort: externalPort,
 		listener:     l,
+		closedChan:   closedChan,
 	}, nil
 }
 
@@ -44,6 +48,9 @@ func (c *proxyConnection) forwardConnectionToSSH(conn net.Conn) {
 		fmt.Printf("error connecting to container ssh at port %d\n", c.internalPort)
 		return
 	}
+	defer func() {
+		c.closedChan <- c
+	}()
 	defer containerConn.Close()
 
 	var wg sync.WaitGroup
