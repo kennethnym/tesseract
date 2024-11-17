@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strconv"
+	"sync"
+	docker2 "tesseract/internal/docker"
 	"tesseract/internal/service"
 	"tesseract/internal/template"
 	"time"
@@ -17,8 +21,13 @@ type createWorkspaceRequestBody struct {
 	ImageID string `json:"imageId"`
 }
 
+type updateWorkspaceRequestBody struct {
+	Status string `json:"status"`
+}
+
 func fetchAllWorkspaces(c echo.Context) error {
 	db := service.Database(c)
+	ctx := c.Request().Context()
 
 	var workspaces []workspace
 	err := db.NewSelect().Model(&workspaces).Scan(c.Request().Context())
@@ -33,10 +42,56 @@ func fetchAllWorkspaces(c echo.Context) error {
 		return c.JSON(http.StatusOK, make([]workspace, 0))
 	}
 
+	docker := service.DockerClient(c)
+	sshProxy := service.SSHProxy(c)
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs []error
+	for i, w := range workspaces {
+		wg.Add(1)
+		i, w := i, w
+		go func() {
+			defer wg.Done()
+
+			inspect, err := docker.ContainerInspect(ctx, w.ContainerID)
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+			} else {
+				switch inspect.State.Status {
+				case "running":
+					workspaces[i].Status = statusRunning
+				case "exited":
+					workspaces[i].Status = statusStopped
+				case "paused":
+					workspaces[i].Status = statusPaused
+				case "restarting":
+					workspaces[i].Status = statusRestarting
+				default:
+					workspaces[i].Status = statusUnknown
+				}
+
+				if internalPort := docker2.ContainerSSHHostPort(ctx, inspect); internalPort > 0 {
+					if port := sshProxy.FindExternalPort(internalPort); port > 0 {
+						workspaces[i].SSHPort = port
+					}
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if err = errors.Join(errs...); err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusOK, workspaces)
 }
 
-func createWorkspace(c echo.Context) error {
+func updateOrCreateWorkspace(c echo.Context) error {
 	workspaceName := c.Param("workspaceName")
 	if workspaceName == "" {
 		return echo.NewHTTPError(http.StatusNotFound)
@@ -46,15 +101,55 @@ func createWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
 
-	body := createWorkspaceRequestBody{}
-	err := json.NewDecoder(c.Request().Body).Decode(&body)
+	db := service.Database(c)
+	ctx := c.Request().Context()
+
+	var w workspace
+	err := db.NewSelect().Model(&w).
+		Where("name = ?", workspaceName).
+		Scan(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return createWorkspace(c, workspaceName)
+		}
+		return err
+	}
+
+	var body updateWorkspaceRequestBody
+	if err = json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+		return err
+	}
+
+	docker := service.DockerClient(c)
+
+	switch status(body.Status) {
+	case statusStopped:
+		if err = stopContainer(ctx, docker, workspaceName); err != nil {
+			return err
+		}
+		w.Status = statusStopped
+		break
+	case statusRunning:
+		if err = startContainer(ctx, docker, workspaceName); err != nil {
+			return err
+		}
+		w.Status = statusRunning
+		break
+	}
+
+	return c.JSON(http.StatusOK, w)
+}
+
+func createWorkspace(c echo.Context, workspaceName string) error {
+	var body createWorkspaceRequestBody
+	if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
 	db := service.Database(c)
+	ctx := c.Request().Context()
 
-	tx, err := db.BeginTx(c.Request().Context(), nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -72,15 +167,50 @@ func createWorkspace(c echo.Context) error {
 
 	docker := service.DockerClient(c)
 
-	res, err := docker.ContainerCreate(c.Request().Context(), &container.Config{
+	containerSSHPort := nat.Port("22/tcp")
+	containerConfig := &container.Config{
+		Tty:   true,
 		Image: img.ImageID,
-	}, nil, nil, nil, workspaceName)
+		ExposedPorts: nat.PortSet{
+			containerSSHPort: {},
+		},
+	}
+
+	hostConfig := &container.HostConfig{
+		PortBindings: nat.PortMap{
+			containerSSHPort: {
+				{"127.0.0.1", ""},
+			},
+		},
+	}
+
+	res, err := docker.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, workspaceName)
 	if err != nil {
 		return err
 	}
 
-	err = docker.ContainerStart(c.Request().Context(), res.ID, container.StartOptions{})
+	err = docker.ContainerStart(ctx, res.ID, container.StartOptions{})
 	if err != nil {
+		return err
+	}
+
+	inspect, err := docker.ContainerInspect(ctx, res.ID)
+	if err != nil {
+		return err
+	}
+
+	ports := inspect.NetworkSettings.Ports[containerSSHPort]
+	if len(ports) == 0 {
+		return errors.New("failed to bind ssh port for container")
+	}
+
+	sshProxy := service.SSHProxy(c)
+	hostPort, err := strconv.Atoi(ports[0].HostPort)
+	if err != nil {
+		return err
+	}
+
+	if err = sshProxy.NewProxyEntryTo(hostPort); err != nil {
 		return err
 	}
 
@@ -95,6 +225,8 @@ func createWorkspace(c echo.Context) error {
 		ContainerID: res.ID,
 		ImageTag:    img.ImageTag,
 		CreatedAt:   time.Now().Format(time.RFC3339),
+		SSHPort:     hostPort,
+		Status:      statusRunning,
 	}
 	_, err = tx.NewInsert().Model(&w).Exec(c.Request().Context())
 	if err != nil {
@@ -107,4 +239,76 @@ func createWorkspace(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, w)
+}
+
+func deleteWorkspace(c echo.Context) error {
+	workspaceName := c.Param("workspaceName")
+	if workspaceName == "" {
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+
+	db := service.Database(c)
+	docker := service.DockerClient(c)
+	ctx := c.Request().Context()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+
+	var w workspace
+	if err = tx.NewSelect().Model(&w).Scan(ctx); err != nil {
+		_ = tx.Rollback()
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+
+	inspect, err := inspectContainer(ctx, docker, w.ContainerID)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if inspect.State.Running {
+		if err = stopContainer(ctx, docker, w.ContainerID); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	if err = deleteContainer(ctx, docker, w.ContainerID); err != nil {
+		return err
+	}
+
+	res, err := tx.NewDelete().
+		Table("workspaces").
+		Where("name = ?", workspaceName).
+		Exec(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		return err
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if count == 0 {
+		_ = tx.Rollback()
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+	if count != 1 {
+		_ = tx.Rollback()
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+
+	if err = tx.Commit(); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }

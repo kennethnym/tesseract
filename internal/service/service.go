@@ -12,6 +12,7 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 	_ "modernc.org/sqlite"
 	"net/http"
+	"tesseract/internal/sshproxy"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 	keyDockerClient = "dockerClient"
 	keyDB           = "db"
 	keyConfig       = "config"
-	keyMelody       = "melody"
+	keySSHProxy     = "sshProxy"
 )
 
 type Services struct {
@@ -27,6 +28,7 @@ type Services struct {
 	DockerClient *client.Client
 	Database     *bun.DB
 	Config       Config
+	SSHProxy     *sshproxy.SSHProxy
 	Melody       *melody.Melody
 }
 
@@ -40,6 +42,10 @@ func DockerClient(c echo.Context) *client.Client {
 
 func Database(c echo.Context) *bun.DB {
 	return c.Get(keyDB).(*bun.DB)
+}
+
+func SSHProxy(c echo.Context) *sshproxy.SSHProxy {
+	return c.Get(keySSHProxy).(*sshproxy.SSHProxy)
 }
 
 func Initialize(config Config) (Services, error) {
@@ -57,12 +63,15 @@ func Initialize(config Config) (Services, error) {
 	bundb := bun.NewDB(db, sqlitedialect.New())
 	bundb.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 
+	sshProxy := sshproxy.New()
+
 	return Services{
 		HTTPClient:   hc,
 		DockerClient: docker,
 		Database:     bundb,
 		Config:       config,
 		Melody:       melody.New(),
+		SSHProxy:     sshProxy,
 	}, nil
 }
 
@@ -73,6 +82,7 @@ func (s Services) Middleware() echo.MiddlewareFunc {
 			c.Set(keyDockerClient, s.DockerClient)
 			c.Set(keyDB, s.Database)
 			c.Set(keyConfig, s.Config)
+			c.Set(keySSHProxy, s.SSHProxy)
 			return next(c)
 		}
 	}

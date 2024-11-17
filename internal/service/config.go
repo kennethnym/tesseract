@@ -9,6 +9,7 @@ import (
 type Config struct {
 	DatabasePath          string `json:"databasePath"`
 	TemplateDirectoryPath string `json:"templateDirectoryPath"`
+	HostKeyDirectoryPath  string `json:"hostKeyDirectoryPath"`
 	HostName              string `json:"hostName"`
 }
 
@@ -25,6 +26,11 @@ func ReadConfigFrom(reader io.Reader) (Config, error) {
 	}
 
 	config.TemplateDirectoryPath, err = filepath.Abs(config.TemplateDirectoryPath)
+	if err != nil {
+		return Config{}, err
+	}
+
+	config.HostKeyDirectoryPath, err = filepath.Abs(config.HostKeyDirectoryPath)
 	if err != nil {
 		return Config{}, err
 	}

@@ -16,6 +16,7 @@ async function fetchApi(
 		() => ApiError.Network,
 	);
 	if (res.status !== 200) {
+		console.log(res.status);
 		switch (res.status) {
 			case 401:
 				throw ApiError.BadRequest;

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -60,9 +61,13 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	log.Println("syncing all workspaces...")
+	if err = workspace.SyncAll(context.Background(), services); err != nil {
+		log.Fatalln(err)
+	}
+
 	apiServer := echo.New()
-	apiServer.Use(services.Middleware())
-	apiServer.Use(proxy.Middleware())
+	apiServer.Use(services.Middleware(), proxy.Middleware())
 	g := apiServer.Group("/api")
 	workspace.DefineRoutes(g)
 	template.DefineRoutes(g)
@@ -92,6 +97,7 @@ func main() {
 			}
 		} else {
 			c.Logger().Error(err)
+			_ = c.NoContent(http.StatusInternalServerError)
 		}
 	}
 

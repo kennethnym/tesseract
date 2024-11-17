@@ -124,11 +124,8 @@ function _TemplateEditor({
 	return (
 		<TemplateEditorStoreContext.Provider value={store.current}>
 			<SidebarProvider>
-				<aside>
-					<EditorSidebar />
-				</aside>
-
-				<div className="flex flex-col w-full">
+				<EditorSidebar />
+				<div className="flex flex-col w-full min-w-0">
 					<EditorTopBar />
 					<main className="w-full h-full flex flex-col">
 						<Editor />
@@ -301,7 +298,7 @@ function TemplateBuildOutputPanel() {
 	return (
 		<div
 			className={cn(
-				"flex flex-col overflow-hidden",
+				"flex flex-col overflow-hidden w-full",
 				isBuildOutputVisible ? "h-96" : "",
 			)}
 		>
