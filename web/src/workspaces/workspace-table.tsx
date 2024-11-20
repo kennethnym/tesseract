@@ -12,9 +12,16 @@ import { useToast } from "@/hooks/use-toast";
 import { StopIcon } from "@radix-ui/react-icons";
 import { ToastAction } from "@radix-ui/react-toast";
 import dayjs from "dayjs";
-import { Info, Loader2, Play, Trash2 } from "lucide-react";
-import { useEffect } from "react";
+import { Info, Loader2, Play, Plus, Trash2 } from "lucide-react";
 import {
+	Fragment,
+	createContext,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
+import {
+	useAddWorkspacePort,
 	useChangeWorkspaceStatus,
 	useDeleteWorkspace,
 	useWorkspaces,
@@ -27,6 +34,22 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { number, object, pattern, size, string, type Infer } from "superstruct";
+import { superstructResolver } from "@hookform/resolvers/superstruct";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+
+const WorkspaceTableRowContext = createContext<Workspace>(
+	null as unknown as Workspace,
+);
 
 function WorkspaceTable() {
 	const { data: workspaces, isLoading } = useWorkspaces();
@@ -66,10 +89,12 @@ function WorkspaceTable() {
 				{workspaces ? (
 					<TableBody>
 						{workspaces.map((workspace) => (
-							<WorkspaceTableRow
+							<WorkspaceTableRowContext.Provider
 								key={workspace.containerId}
-								workspace={workspace}
-							/>
+								value={workspace}
+							>
+								<WorkspaceTableRow key={workspace.containerId} />
+							</WorkspaceTableRowContext.Provider>
 						))}
 					</TableBody>
 				) : null}
@@ -79,7 +104,9 @@ function WorkspaceTable() {
 	);
 }
 
-function WorkspaceTableRow({ workspace }: { workspace: Workspace }) {
+function WorkspaceTableRow() {
+	const workspace = useContext(WorkspaceTableRowContext);
+
 	function statusLabel() {
 		switch (workspace.status) {
 			case WorkspaceStatus.Running:
@@ -104,15 +131,16 @@ function WorkspaceTableRow({ workspace }: { workspace: Workspace }) {
 				{dayjs(workspace.createdAt).format("YYYY/MM/DD HH:mm")}
 			</TableCell>
 			<TableCell className="flex justify-end space-x-1">
-				<WorkspaceInfoButton workspace={workspace} />
-				<WorkspaceStatusButton workspace={workspace} />
+				<WorkspaceInfoButton />
+				<WorkspaceStatusButton />
 				<DeleteWorkspaceButton workspace={workspace} />
 			</TableCell>
 		</TableRow>
 	);
 }
 
-function WorkspaceStatusButton({ workspace }: { workspace: Workspace }) {
+function WorkspaceStatusButton() {
+	const workspace = useContext(WorkspaceTableRowContext);
 	const { toast } = useToast();
 	const { startWorkspace, stopWorkspace, status } = useChangeWorkspaceStatus();
 
@@ -212,7 +240,7 @@ function DeleteWorkspaceButton({ workspace }: { workspace: Workspace }) {
 	);
 }
 
-function WorkspaceInfoButton({ workspace }: { workspace: Workspace }) {
+function WorkspaceInfoButton() {
 	return (
 		<Popover>
 			<PopoverTrigger>
@@ -221,18 +249,144 @@ function WorkspaceInfoButton({ workspace }: { workspace: Workspace }) {
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent>
-				<div className="grid grid-cols-3">
-					{workspace.sshPort ? (
-						<>
-							<div className="col-span-2">
-								<p>SSH Port</p>
-							</div>
-							<p className="text-right">{workspace.sshPort}</p>
-						</>
-					) : null}
-				</div>
+				<WorkspaceInfoPopoverContent />
 			</PopoverContent>
 		</Popover>
+	);
+}
+
+function WorkspaceInfoPopoverContent() {
+	const workspace = useContext(WorkspaceTableRowContext);
+	return (
+		<div className="grid grid-cols-3 gap-4">
+			{workspace.sshPort ? (
+				<>
+					<div className="col-span-2">
+						<p>SSH Port</p>
+					</div>
+					<p className="text-right">{workspace.sshPort}</p>
+				</>
+			) : null}
+			{workspace?.ports?.map(({ port, subdomain }) => (
+				<Fragment key={port}>
+					<div className="col-span-2">
+						<p>{subdomain}</p>
+					</div>
+					<p className="text-right">{port}</p>
+				</Fragment>
+			))}
+			<PortEntry />
+		</div>
+	);
+}
+
+const PortEntryForm = object({
+	portName: pattern(string(), /^[\w-]+$/),
+	port: size(number(), 0, 65536),
+});
+
+function PortEntry() {
+	const [isAddingPort, setIsAddingPort] = useState(false);
+	const { addWorkspacePort, status } = useAddWorkspacePort();
+	const workspace = useContext(WorkspaceTableRowContext);
+	const form = useForm({
+		resolver: superstructResolver(PortEntryForm),
+		disabled: status.type === "loading",
+		defaultValues: {
+			port: 1234,
+			portName: "",
+		},
+	});
+
+	function onAddPortButtonClick() {
+		if (isAddingPort) {
+		} else {
+			setIsAddingPort(true);
+		}
+	}
+
+	async function onSubmit(values: Infer<typeof PortEntryForm>) {
+		await addWorkspacePort(workspace.name, [
+			{ subdomain: values.portName, port: values.port },
+		]);
+	}
+
+	if (!isAddingPort) {
+		return (
+			<Button
+				className="col-span-3"
+				variant="secondary"
+				size="sm"
+				onClick={onAddPortButtonClick}
+			>
+				<Plus /> Add port
+			</Button>
+		);
+	}
+
+	return (
+		<Form {...form}>
+			<form
+				className="grid grid-cols-subgrid col-span-3 gap-2"
+				onSubmit={form.handleSubmit(onSubmit)}
+			>
+				{isAddingPort ? (
+					<>
+						<FormField
+							control={form.control}
+							name="portName"
+							render={({ field }) => (
+								<FormItem className="col-span-2">
+									<FormLabel>Subdomain</FormLabel>
+									<FormControl>
+										<Input placeholder="web-app" {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="port"
+							render={({ field }) => (
+								<FormItem className="col-span-1">
+									<FormLabel>Port</FormLabel>
+									<FormControl>
+										<Input
+											className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+											// @ts-ignore
+											style={{ "-moz-appearance": "textfield" }}
+											type="number"
+											min={0}
+											max={65535}
+											placeholder="8080"
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</>
+				) : null}
+				<Button
+					type="submit"
+					className="col-span-3 mt-2"
+					variant="secondary"
+					size="sm"
+					disabled={status.type === "loading"}
+					onClick={onAddPortButtonClick}
+				>
+					{status.type === "loading" ? (
+						<LoadingSpinner />
+					) : (
+						<>
+							<Plus /> Done
+						</>
+					)}
+				</Button>
+			</form>
+		</Form>
 	);
 }
 

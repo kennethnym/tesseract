@@ -12,6 +12,7 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 	_ "modernc.org/sqlite"
 	"net/http"
+	"tesseract/internal/reverseproxy"
 	"tesseract/internal/sshproxy"
 )
 
@@ -21,6 +22,7 @@ const (
 	keyDB           = "db"
 	keyConfig       = "config"
 	keySSHProxy     = "sshProxy"
+	keyReverseProxy = "reverseProxy"
 )
 
 type Services struct {
@@ -29,6 +31,7 @@ type Services struct {
 	Database     *bun.DB
 	Config       Config
 	SSHProxy     *sshproxy.SSHProxy
+	ReverseProxy *reverseproxy.ReverseProxy
 	Melody       *melody.Melody
 }
 
@@ -46,6 +49,10 @@ func Database(c echo.Context) *bun.DB {
 
 func SSHProxy(c echo.Context) *sshproxy.SSHProxy {
 	return c.Get(keySSHProxy).(*sshproxy.SSHProxy)
+}
+
+func ReverseProxy(c echo.Context) *reverseproxy.ReverseProxy {
+	return c.Get(keyReverseProxy).(*reverseproxy.ReverseProxy)
 }
 
 func Initialize(config Config) (Services, error) {
@@ -72,6 +79,7 @@ func Initialize(config Config) (Services, error) {
 		Config:       config,
 		Melody:       melody.New(),
 		SSHProxy:     sshProxy,
+		ReverseProxy: reverseproxy.New(config.HostName),
 	}, nil
 }
 
@@ -83,6 +91,7 @@ func (s Services) Middleware() echo.MiddlewareFunc {
 			c.Set(keyDB, s.Database)
 			c.Set(keyConfig, s.Config)
 			c.Set(keySSHProxy, s.SSHProxy)
+			c.Set(keyReverseProxy, s.ReverseProxy)
 			return next(c)
 		}
 	}

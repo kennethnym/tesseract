@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"tesseract/internal/migration"
-	"tesseract/internal/reverseproxy"
 	"tesseract/internal/service"
 	"tesseract/internal/template"
 	"tesseract/internal/workspace"
@@ -55,36 +54,26 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	proxy := reverseproxy.New(services)
-	err = proxy.Start()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	log.Println("syncing all workspaces...")
-	if err = workspace.SyncAll(context.Background(), services); err != nil {
+	syncCtx, cancel := context.WithCancel(context.Background())
+	if err = workspace.SyncAll(syncCtx, services); err != nil {
 		log.Fatalln(err)
 	}
+	cancel()
 
 	apiServer := echo.New()
-	apiServer.Use(services.Middleware(), proxy.Middleware())
+	apiServer.Use(services.Middleware())
 	g := apiServer.Group("/api")
-	workspace.DefineRoutes(g)
+	workspace.DefineRoutes(g, services)
 	template.DefineRoutes(g)
 
 	root := echo.New()
-	root.Use(middleware.CORS())
+	root.Use(services.ReverseProxy.Middleware(), middleware.CORS())
 
 	root.Any("/*", func(c echo.Context) error {
 		req := c.Request()
 		res := c.Response()
-
-		if proxy.ShouldHandleRequest(c) {
-			proxy.ServeHTTP(res, req)
-		} else {
-			apiServer.ServeHTTP(res, req)
-		}
-
+		apiServer.ServeHTTP(res, req)
 		return nil
 	})
 

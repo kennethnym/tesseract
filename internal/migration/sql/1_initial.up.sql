@@ -43,8 +43,7 @@ CREATE TABLE IF NOT EXISTS port_mappings
 (
     workspace_id   TEXT    NOT NULL,
     container_port INTEGER NOT NULL,
-    host_port      INTEGER NOT NULL,
     subdomain      TEXT,
 
-    CONSTRAINT pk_port_mappings PRIMARY KEY (workspace_id, container_port, host_port)
+    CONSTRAINT pk_port_mappings PRIMARY KEY (workspace_id, container_port, subdomain)
 )

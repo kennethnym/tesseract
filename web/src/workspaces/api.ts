@@ -1,6 +1,10 @@
 import { fetchApi } from "@/api";
 import useSWR, { useSWRConfig } from "swr";
-import { WorkspaceStatus, type Workspace } from "./types";
+import {
+	WorkspaceStatus,
+	type Workspace,
+	type WorkspacePortMapping,
+} from "./types";
 import { useCallback, useState } from "react";
 import type { QueryStatus } from "@/lib/query";
 
@@ -154,9 +158,43 @@ function useDeleteWorkspace() {
 	return { deleteWorkspace, status };
 }
 
+function useAddWorkspacePort() {
+	const [status, setStatus] = useState<QueryStatus>({ type: "idle" });
+	const { mutate } = useSWRConfig();
+
+	const addWorkspacePort = useCallback(
+		async (workspaceName: string, ports: WorkspacePortMapping[]) => {
+			setStatus({ type: "loading" });
+			try {
+				await mutate(
+					"/workspaces",
+					fetchApi(`/workspaces/${workspaceName}`, {
+						method: "POST",
+						body: JSON.stringify({ ports }),
+						headers: {
+							"Content-Type": "application/json",
+						},
+					}).then((res): Promise<Workspace> => res.json()),
+					{
+						populateCache: (workspace, workspaces) =>
+							workspaces.map((it: Workspace) =>
+								it.name === workspace.name ? workspace : it,
+							),
+						throwOnError: true,
+					},
+				);
+			} catch (err: unknown) {}
+		},
+		[mutate],
+	);
+
+	return { addWorkspacePort, status };
+}
+
 export {
 	useWorkspaces,
 	useCreateWorkspace,
 	useChangeWorkspaceStatus,
 	useDeleteWorkspace,
+	useAddWorkspacePort,
 };

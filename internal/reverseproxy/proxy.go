@@ -8,29 +8,21 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"tesseract/internal/service"
 )
 
 type ReverseProxy struct {
 	*echo.Echo
-
-	services    service.Services
+	hostName    string
 	httpProxies map[string]*httputil.ReverseProxy
-}
-
-type portMapping struct {
-	subdomain     string
-	containerPort int
-	hostPort      int
 }
 
 const keyReverseProxy = "reverseProxy"
 
-func New(services service.Services) *ReverseProxy {
+func New(hostName string) *ReverseProxy {
 	e := echo.New()
 	proxy := &ReverseProxy{
 		e,
-		services,
+		hostName,
 		make(map[string]*httputil.ReverseProxy),
 	}
 
@@ -39,55 +31,25 @@ func New(services service.Services) *ReverseProxy {
 	return proxy
 }
 
-func From(c echo.Context) *ReverseProxy {
-	return c.Get(keyReverseProxy).(*ReverseProxy)
-}
-
-func (p *ReverseProxy) Start() error {
-	rows, err := p.services.Database.Query("SELECT container_port, host_port, subdomain FROM port_mappings;")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	var mappings []portMapping
-	for rows.Next() {
-		mapping := portMapping{}
-		err = rows.Scan(&mapping.containerPort, &mapping.hostPort, &mapping.subdomain)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, m := range mappings {
-		if m.subdomain == "" {
-			continue
-		}
-
-		u, err := url.Parse(fmt.Sprintf("http://localhost:%d", m.hostPort))
-		if err != nil {
-			continue
-		}
-
-		proxy := httputil.NewSingleHostReverseProxy(u)
-		p.httpProxies[m.subdomain] = proxy
-	}
-
-	return nil
-}
-
 func (p *ReverseProxy) Middleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if p.shouldHandleRequest(c) {
+				return p.handleRequest(c)
+			}
 			c.Set(keyReverseProxy, p)
 			return next(c)
 		}
 	}
 }
 
-func (p *ReverseProxy) ShouldHandleRequest(c echo.Context) bool {
-	config := p.services.Config
-	h := strings.Replace(config.HostName, ".", "\\.", -1)
+func (p *ReverseProxy) AddEntry(subdomain string, url *url.URL) {
+	proxy := httputil.NewSingleHostReverseProxy(url)
+	p.httpProxies[subdomain] = proxy
+}
+
+func (p *ReverseProxy) shouldHandleRequest(c echo.Context) bool {
+	h := strings.Replace(p.hostName, ".", "\\.", -1)
 	reg, err := regexp.Compile(".*\\." + h)
 	if err != nil {
 		return false
@@ -98,9 +60,8 @@ func (p *ReverseProxy) ShouldHandleRequest(c echo.Context) bool {
 func (p *ReverseProxy) handleRequest(c echo.Context) error {
 	req := c.Request()
 	res := c.Response()
-	config := p.services.Config
 
-	h := strings.Replace(config.HostName, ".", "\\.", -1)
+	h := strings.Replace(p.hostName, ".", "\\.", -1)
 	reg, err := regexp.Compile(fmt.Sprintf("(?P<subdomain>.*)\\.%v", h))
 	if err != nil {
 		return err
