@@ -6,7 +6,7 @@ import { Page } from "@/components/ui/page.tsx";
 import { SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { Toaster } from "@/components/ui/toaster";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { WorkspaceTable } from "./workspace-table";
 import { NewWorkspaceDialog } from "./new-workspace-dialog";
 
@@ -31,6 +31,10 @@ function Main() {
 	const [isNewWorkspaceDialogOpen, setIsNewWorkspaceDialogOpen] =
 		useState(false);
 
+	const closeWorkspaceDialog = useCallback(() => {
+		setIsNewWorkspaceDialogOpen(false);
+	}, []);
+
 	return (
 		<Dialog
 			open={isNewWorkspaceDialogOpen}
@@ -47,9 +51,7 @@ function Main() {
 				<WorkspaceTable />
 			</main>
 
-			<NewWorkspaceDialog
-				onCreateSuccess={() => setIsNewWorkspaceDialogOpen(false)}
-			/>
+			<NewWorkspaceDialog onCreateSuccess={closeWorkspaceDialog} />
 		</Dialog>
 	);
 }

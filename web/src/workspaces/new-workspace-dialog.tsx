@@ -29,14 +29,16 @@ import { useForm } from "react-hook-form";
 import { nonempty, object, pattern, string, type Infer } from "superstruct";
 import { useCreateWorkspace } from "./api";
 
+interface NewWorkspaceDialogProps {
+	onCreateSuccess: () => void;
+}
+
 const NewWorkspaceForm = object({
 	workspaceName: pattern(string(), /^[\w-]+$/),
 	imageId: nonempty(string()),
 });
 
-function NewWorkspaceDialog({
-	onCreateSuccess,
-}: { onCreateSuccess: () => void }) {
+function NewWorkspaceDialog({ onCreateSuccess }: NewWorkspaceDialogProps) {
 	const { data: templateImages, isLoading, error } = useTemplateImages();
 	const form = useForm({
 		resolver: superstructResolver(NewWorkspaceForm),
@@ -48,8 +50,6 @@ function NewWorkspaceDialog({
 	const { createWorkspace, status } = useCreateWorkspace();
 	const { toast } = useToast();
 	const formRef = useRef<HTMLFormElement | null>(null);
-
-	const _onCreateSuccess = useCallback(onCreateSuccess, []);
 
 	useEffect(() => {
 		switch (status.type) {
@@ -70,12 +70,12 @@ function NewWorkspaceDialog({
 				});
 				break;
 			case "ok":
-				_onCreateSuccess();
+				onCreateSuccess();
 				break;
 			default:
 				break;
 		}
-	}, [status.type, toast, _onCreateSuccess]);
+	}, [status.type, toast, onCreateSuccess]);
 
 	async function onSubmit(values: Infer<typeof NewWorkspaceForm>) {
 		await createWorkspace({

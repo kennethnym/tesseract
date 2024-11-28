@@ -47,6 +47,7 @@ function useCreateWorkspace() {
 						throwOnError: true,
 					},
 				);
+				setStatus({ type: "ok" });
 				return workspace ?? null;
 			} catch (error: unknown) {
 				setStatus({ type: "error", error });
