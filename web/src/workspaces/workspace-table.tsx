@@ -46,6 +46,8 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { WorkspaceInfoDialog } from "./workspace-info-dialog";
 
 const WorkspaceTableRowContext = createContext<Workspace>(
 	null as unknown as Workspace,
@@ -230,51 +232,58 @@ function DeleteWorkspaceButton({ workspace }: { workspace: Workspace }) {
 	}
 
 	return (
-		<Button variant="outline" size="icon" onClick={_deleteWorkspace}>
-			{status.type === "loading" ? (
-				<LoadingSpinner />
-			) : (
-				<Trash2 className="text-destructive" />
-			)}
+		<Button variant="destructive" size="icon" onClick={_deleteWorkspace}>
+			{status.type === "loading" ? <LoadingSpinner /> : <Trash2 />}
 		</Button>
 	);
 }
 
 function WorkspaceInfoButton() {
 	return (
-		<Popover>
-			<PopoverTrigger>
+		<Dialog>
+			<DialogTrigger>
 				<Button variant="outline" size="icon">
 					<Info />
 				</Button>
-			</PopoverTrigger>
-			<PopoverContent>
-				<WorkspaceInfoPopoverContent />
-			</PopoverContent>
-		</Popover>
+			</DialogTrigger>
+			<WorkspaceInfoDialog />
+		</Dialog>
 	);
 }
 
 function WorkspaceInfoPopoverContent() {
 	const workspace = useContext(WorkspaceTableRowContext);
 	return (
-		<div className="grid grid-cols-3 gap-4">
-			{workspace.sshPort ? (
-				<>
-					<div className="col-span-2">
-						<p>SSH Port</p>
-					</div>
-					<p className="text-right">{workspace.sshPort}</p>
-				</>
-			) : null}
-			{workspace?.ports?.map(({ port, subdomain }) => (
-				<Fragment key={port}>
-					<div className="col-span-2">
-						<p>{subdomain}</p>
-					</div>
-					<p className="text-right">{port}</p>
-				</Fragment>
-			))}
+		<div className="flex flex-col">
+			<div className="grid grid-cols-3 gap-2">
+				{workspace.sshPort ? (
+					<>
+						<div className="col-span-2">
+							<p>SSH Port</p>
+						</div>
+						<p className="text-right">{workspace.sshPort}</p>
+					</>
+				) : null}
+			</div>
+			<hr className="my-2" />
+			<p className="text-sm text-muted-foreground col-span-3 mb-1">
+				Forwarded ports
+			</p>
+			<div className="grid grid-cols-3 gap-2">
+				{workspace?.ports?.map(({ port, subdomain }) => (
+					<Fragment key={port}>
+						<div className="col-span-2 flex items-center">
+							<p>{subdomain}</p>
+						</div>
+						<div className="flex items-center space-x-2">
+							<p className="text-right">{port}</p>
+							<Button variant="destructive" size="icon">
+								<Trash2 />
+							</Button>
+						</div>
+					</Fragment>
+				))}
+			</div>
 			<PortEntry />
 		</div>
 	);
@@ -314,7 +323,7 @@ function PortEntry() {
 	if (!isAddingPort) {
 		return (
 			<Button
-				className="col-span-3"
+				className="col-span-3 mt-4"
 				variant="secondary"
 				size="sm"
 				onClick={onAddPortButtonClick}
@@ -337,9 +346,8 @@ function PortEntry() {
 							name="portName"
 							render={({ field }) => (
 								<FormItem className="col-span-2">
-									<FormLabel>Subdomain</FormLabel>
 									<FormControl>
-										<Input placeholder="web-app" {...field} />
+										<Input placeholder="Subdomain" {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -350,7 +358,6 @@ function PortEntry() {
 							name="port"
 							render={({ field }) => (
 								<FormItem className="col-span-1">
-									<FormLabel>Port</FormLabel>
 									<FormControl>
 										<Input
 											className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -361,6 +368,9 @@ function PortEntry() {
 											max={65535}
 											placeholder="8080"
 											{...field}
+											onChange={(value) =>
+												field.onChange(value.currentTarget.valueAsNumber)
+											}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -390,4 +400,4 @@ function PortEntry() {
 	);
 }
 
-export { WorkspaceTable };
+export { WorkspaceTable, WorkspaceTableRowContext };

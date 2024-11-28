@@ -48,6 +48,10 @@ func (p *ReverseProxy) AddEntry(subdomain string, url *url.URL) {
 	p.httpProxies[subdomain] = proxy
 }
 
+func (p *ReverseProxy) RemoveEntry(subdomain string) {
+	delete(p.httpProxies, subdomain)
+}
+
 func (p *ReverseProxy) shouldHandleRequest(c echo.Context) bool {
 	h := strings.Replace(p.hostName, ".", "\\.", -1)
 	reg, err := regexp.Compile(".*\\." + h)
@@ -83,7 +87,8 @@ func (p *ReverseProxy) handleRequest(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
 
-	proxy, ok := p.httpProxies[subdomain]
+	first := strings.Split(subdomain, ".")[0]
+	proxy, ok := p.httpProxies[first]
 	if !ok {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}

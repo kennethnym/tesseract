@@ -38,7 +38,7 @@ var errWorkspaceNotFound = errors.New("workspace not found")
 
 func (mgr workspaceManager) findAllWorkspaces(ctx context.Context) ([]workspace, error) {
 	var workspaces []workspace
-	err := mgr.db.NewSelect().Model(&workspaces).Scan(ctx)
+	err := mgr.db.NewSelect().Model(&workspaces).Relation("PortMappings").Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return make([]workspace, 0), nil
@@ -100,6 +100,7 @@ func (mgr workspaceManager) findAllWorkspaces(ctx context.Context) ([]workspace,
 func (mgr workspaceManager) findWorkspace(ctx context.Context, name string) (*workspace, error) {
 	var w workspace
 	err := mgr.db.NewSelect().Model(&w).
+		Relation("PortMappings").
 		Where("name = ?", name).
 		Scan(ctx)
 	if err != nil {
@@ -214,21 +215,9 @@ func (mgr workspaceManager) createWorkspace(ctx context.Context, opts createWork
 	return &w, nil
 }
 
-func (mgr workspaceManager) deleteWorkspace(ctx context.Context, name string) error {
+func (mgr workspaceManager) deleteWorkspace(ctx context.Context, workspace *workspace) error {
 	tx, err := mgr.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
-	}
-
-	var workspace workspace
-	if err = tx.NewSelect().
-		Model(&workspace).
-		Where("name = ?", name).
-		Scan(ctx); err != nil {
-		_ = tx.Rollback()
-		if errors.Is(err, sql.ErrNoRows) {
-			return errWorkspaceNotFound
-		}
 		return err
 	}
 
@@ -252,7 +241,7 @@ func (mgr workspaceManager) deleteWorkspace(ctx context.Context, name string) er
 	}
 
 	res, err := tx.NewDelete().
-		Model(&workspace).
+		Model(workspace).
 		WherePK().
 		Exec(ctx)
 	if err != nil {
@@ -354,6 +343,32 @@ func (mgr workspaceManager) addPortMappings(ctx context.Context, workspace *work
 	}
 
 	workspace.PortMappings = portMappings
+
+	return nil
+}
+
+func (mgr workspaceManager) deletePortMapping(ctx context.Context, workspace *workspace, portMapping *portMapping) error {
+	tx, err := mgr.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.NewDelete().Model(portMapping).
+		Where("workspace_id = ?", workspace.ID).
+		Where("subdomain = ?", portMapping.Subdomain).
+		Where("container_port = ?", portMapping.ContainerPort).
+		Exec(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	mgr.reverseProxy.RemoveEntry(portMapping.Subdomain)
 
 	return nil
 }

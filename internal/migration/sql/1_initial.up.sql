@@ -27,7 +27,10 @@ CREATE TABLE IF NOT EXISTS template_files
     file_path   TEXT NOT NULL,
     content     BLOB NOT NULL,
 
-    CONSTRAINT pk_template_files PRIMARY KEY (template_id, file_path)
+    CONSTRAINT pk_template_files PRIMARY KEY (template_id, file_path),
+    CONSTRAINT fk_template_template_files FOREIGN KEY (template_id) REFERENCES templates (id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS template_images
@@ -36,7 +39,10 @@ CREATE TABLE IF NOT EXISTS template_images
     image_tag   TEXT NOT NULL,
     image_id    TEXT NOT NULL,
 
-    CONSTRAINT pk_template_images PRIMARY KEY (template_id, image_tag, image_id)
+    CONSTRAINT pk_template_images PRIMARY KEY (template_id, image_tag, image_id),
+    CONSTRAINT fk_template_template_images FOREIGN KEY (template_id) REFERENCES templates (id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS port_mappings
@@ -45,5 +51,8 @@ CREATE TABLE IF NOT EXISTS port_mappings
     container_port INTEGER NOT NULL,
     subdomain      TEXT,
 
-    CONSTRAINT pk_port_mappings PRIMARY KEY (workspace_id, container_port, subdomain)
+    CONSTRAINT pk_port_mappings PRIMARY KEY (workspace_id, container_port, subdomain),
+    CONSTRAINT fk_workspace_port_mappings FOREIGN KEY (workspace_id) REFERENCES workspaces (id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 )

@@ -49,7 +49,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	err = migration.Up(fmt.Sprintf("sqlite3://%s", config.DatabasePath))
+	err = migration.Up(fmt.Sprintf("sqlite://%s", config.DatabasePath))
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatalln(err)
 	}

@@ -183,7 +183,10 @@ function useAddWorkspacePort() {
 						throwOnError: true,
 					},
 				);
-			} catch (err: unknown) {}
+				setStatus({ type: "ok" });
+			} catch (error: unknown) {
+				setStatus({ type: "error", error });
+			}
 		},
 		[mutate],
 	);

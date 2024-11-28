@@ -49,7 +49,7 @@ func createDockerTemplate(ctx context.Context, tx bun.Tx, opts createTemplateOpt
 		FilePath:   "README.md",
 		Content:    make([]byte, 0),
 	}
-	files := []templateFile{dockerfile, readme}
+	files := []*templateFile{&dockerfile, &readme}
 
 	if err = tx.NewInsert().Model(&t).Returning("*").Scan(ctx); err != nil {
 		return nil, err
@@ -58,6 +58,8 @@ func createDockerTemplate(ctx context.Context, tx bun.Tx, opts createTemplateOpt
 	if err = tx.NewInsert().Model(&files).Scan(ctx); err != nil {
 		return nil, err
 	}
+
+	t.Files = files
 
 	return &t, nil
 }

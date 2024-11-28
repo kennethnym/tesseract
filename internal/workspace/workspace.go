@@ -45,7 +45,7 @@ type portMapping struct {
 	ContainerPort int       `json:"port"`
 	Subdomain     string    `json:"subdomain"`
 
-	Workspace workspace `bun:"rel:belongs-to,join:workspace_id=id"`
+	Workspace workspace `bun:"rel:belongs-to,join:workspace_id=id" json:"-"`
 }
 
 // status represents the status of a workspace.
@@ -121,15 +121,19 @@ func SyncAll(ctx context.Context, services service.Services) error {
 		}()
 	}
 
+	wg.Wait()
+
 	if err = errors.Join(errs...); err != nil {
 		_ = tx.Rollback()
 		return err
 	}
 
-	_, err = tx.NewDelete().Model(&deletedWorkspaces).WherePK().Exec(ctx)
-	if err != nil {
-		_ = tx.Rollback()
-		return err
+	if len(deletedWorkspaces) > 0 {
+		_, err = tx.NewDelete().Model(&deletedWorkspaces).WherePK().Exec(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
