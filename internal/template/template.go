@@ -3,7 +3,11 @@ package template
 import (
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"regexp"
 )
+
+// templateNameRegex is a regex to test whether a given template name is valid
+var templateNameRegex = regexp.MustCompile("^[\\w-]+$")
 
 type template struct {
 	bun.BaseModel `bun:"table:templates,alias:template"`
@@ -27,7 +31,7 @@ type templateFile struct {
 	Content    []byte    `bun:"type:blob" json:"content"`
 }
 
-type TemplateImage struct {
+type Image struct {
 	bun.BaseModel `bun:"table:template_images,alias:template_images"`
 
 	TemplateID uuid.UUID `bun:"type:uuid" json:"-"`

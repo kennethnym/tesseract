@@ -1,8 +1,9 @@
 package workspace
 
 import (
-	"github.com/labstack/echo/v4"
 	"tesseract/internal/service"
+
+	"github.com/labstack/echo/v4"
 )
 
 func newWorkspaceManagerMiddleware(services service.Services) echo.MiddlewareFunc {

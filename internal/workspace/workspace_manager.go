@@ -131,7 +131,7 @@ func (mgr workspaceManager) createWorkspace(ctx context.Context, opts createWork
 		return nil, err
 	}
 
-	var img template.TemplateImage
+	var img template.Image
 	err = tx.NewSelect().Model(&img).
 		Where("image_id = ?", opts.imageID).
 		Scan(ctx)

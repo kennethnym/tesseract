@@ -80,7 +80,7 @@ func main() {
 
 	g := apiServer.Group("/api")
 	workspace.DefineRoutes(g, services)
-	template.DefineRoutes(g)
+	template.DefineRoutes(g, services)
 
 	apiServer.HTTPErrorHandler = func(err error, c echo.Context) {
 		var he *echo.HTTPError

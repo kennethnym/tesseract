@@ -1,15 +1,12 @@
 package template
 
 import (
-	"bufio"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
-	"strings"
 	"tesseract/internal/service"
 )
 
@@ -19,7 +16,7 @@ type createTemplateRequestBody struct {
 	Documentation string `json:"documentation"`
 }
 
-type updateTemplateRequestBody struct {
+type postTemplateRequestBody struct {
 	Description *string        `json:"description"`
 	Files       []templateFile `json:"files"`
 
@@ -27,92 +24,52 @@ type updateTemplateRequestBody struct {
 	BuildArgs map[string]*string `json:"buildArgs"`
 }
 
-type templateBuildLogEvent struct {
-	Type       string `json:"type"`
-	LogContent string `json:"logContent"`
-}
-
-type templateBuildFinishedEvent struct {
-	Type     string    `json:"type"`
-	Template *template `json:"template"`
-}
-
 func fetchAllTemplates(c echo.Context) error {
-	db := service.Database(c)
-
-	var templates []template
-	err := db.NewSelect().Model(&templates).Scan(c.Request().Context())
+	mgr := templateManagerFrom(c)
+	templates, err := mgr.findAllTemplates(c.Request().Context())
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return c.JSON(http.StatusOK, make([]template, 0))
-		}
 		return err
-	}
-
-	if len(templates) == 0 {
-		return c.JSON(http.StatusOK, make([]template, 0))
 	}
 	return c.JSON(http.StatusOK, templates)
 }
 
 func fetchTemplate(c echo.Context) error {
-	db := service.Database(c)
-
-	name := c.Param("templateName")
-	if strings.TrimSpace(name) == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
-
-	var tmpl template
-	err := db.NewSelect().Model(&tmpl).
-		Relation("Files").
-		Where("name = ?", name).
-		Scan(c.Request().Context())
+	mgr := templateManagerFrom(c)
+	template, err := mgr.findTemplate(c.Request().Context(), c.Param("templateName"))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, errTemplateNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound)
 		}
 		return err
 	}
-
-	if len(tmpl.Files) > 0 {
-		tmpl.FileMap = make(map[string]*templateFile)
-	}
-	for _, f := range tmpl.Files {
-		tmpl.FileMap[f.FilePath] = f
-	}
-
-	return c.JSON(http.StatusOK, tmpl)
+	return c.JSON(http.StatusOK, template)
 }
 
 func createOrUpdateTemplate(c echo.Context) error {
-	db := service.Database(c)
-
-	name := c.Param("templateName")
-	if strings.TrimSpace(name) == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
-
-	exists, err := db.NewSelect().
-		Table("templates").
-		Where("name = ?", name).
-		Exists(c.Request().Context())
+	mgr := templateManagerFrom(c)
+	exists, err := mgr.hasTemplate(c.Request().Context(), c.Param("templateName"))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return createTemplate(c)
-		}
 		return err
 	}
-
 	if !exists {
 		return createTemplate(c)
 	}
 
-	return updateTemplate(c)
+	var body postTemplateRequestBody
+	err = json.NewDecoder(c.Request().Body).Decode(&body)
+	if err != nil {
+		return err
+	}
+
+	if body.ImageTag != nil || body.BuildArgs != nil {
+		return buildTemplate(c, body)
+	}
+
+	return updateTemplate(c, body)
 }
 
 func createTemplate(c echo.Context) error {
-	db := service.Database(c)
+	mgr := templateManagerFrom(c)
 	name := c.Param("templateName")
 
 	var body createTemplateRequestBody
@@ -121,208 +78,85 @@ func createTemplate(c echo.Context) error {
 		return err
 	}
 
-	tx, err := db.BeginTx(c.Request().Context(), nil)
-	if err != nil {
-		return err
-	}
-
-	createdTemplate, err := createDockerTemplate(c.Request().Context(), tx, createTemplateOptions{
+	createdTemplate, err := mgr.createTemplate(c.Request().Context(), createTemplateOptions{
 		name:        name,
 		description: body.Description,
 	})
 	if err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 
 	return c.JSON(http.StatusOK, createdTemplate)
 }
 
-func updateTemplate(c echo.Context) error {
-	db := service.Database(c)
+func updateTemplate(c echo.Context, body postTemplateRequestBody) error {
 	name := c.Param("templateName")
+	mgr := templateManagerFrom(c)
+	ctx := c.Request().Context()
 
-	var body updateTemplateRequestBody
-	err := json.NewDecoder(c.Request().Body).Decode(&body)
+	updatedTemplate, err := mgr.updateTemplate(ctx, name, updateTemplateOptions{
+		description: *body.Description,
+	})
 	if err != nil {
-		return err
-	}
-
-	if body.BuildArgs != nil && body.ImageTag == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Image tag must be specified if buildArgs is passed")
-	}
-
-	tx, err := db.BeginTx(c.Request().Context(), nil)
-	if err != nil {
-		return err
-	}
-
-	var tmpl template
-	err = tx.NewSelect().Model(&tmpl).
-		Where("name = ?", name).
-		Scan(c.Request().Context())
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, errTemplateNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound)
 		}
 		return err
 	}
 
-	if body.Description != nil {
-		tmpl.Description = *body.Description
-		_, err = tx.NewUpdate().Model(&tmpl).
-			Column("description").
-			WherePK().
-			Exec(c.Request().Context())
-		if err != nil {
-			_ = tx.Rollback()
-			return err
+	return c.JSON(http.StatusOK, &updatedTemplate)
+}
+
+func buildTemplate(c echo.Context, body postTemplateRequestBody) error {
+	mgr := templateManagerFrom(c)
+	name := c.Param("templateName")
+	ctx := c.Request().Context()
+
+	template, err := mgr.findTemplate(ctx, name)
+	if err != nil {
+		if errors.Is(err, errTemplateNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound)
 		}
-
-		if err = tx.Commit(); err != nil {
-			_ = tx.Rollback()
-			return err
-		}
-	}
-
-	if body.ImageTag != nil {
-		err = tx.NewSelect().Model(&tmpl.Files).
-			Where("template_id = ?", tmpl.ID).
-			Scan(c.Request().Context())
-		if err != nil {
-			_ = tx.Rollback()
-			return err
-		}
-
-		docker := service.DockerClient(c)
-		log, err := buildDockerTemplate(c.Request().Context(), docker, &tmpl, templateBuildOptions{
-			imageTag:  *body.ImageTag,
-			buildArgs: body.BuildArgs,
-		})
-		if err != nil {
-			return err
-		}
-
-		w := c.Response()
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-
-		scanner := bufio.NewScanner(log)
-
-		var imageID string
-
-		for scanner.Scan() {
-			t := scanner.Text()
-
-			fmt.Println("DOCKER LOG: ", t)
-
-			var msg map[string]any
-			err = json.Unmarshal([]byte(t), &msg)
-			if err != nil {
-				return err
-			}
-
-			if stream, ok := msg["stream"].(string); ok {
-				if _, err = w.Write([]byte(stream)); err != nil {
-					return err
-				}
-				w.Flush()
-			} else if errmsg, ok := msg["error"].(string); ok {
-				if _, err = w.Write([]byte(errmsg + "\n")); err != nil {
-					return err
-				}
-				w.Flush()
-			} else if status, ok := msg["status"].(string); ok {
-				var text string
-				if progress, ok := msg["progress"].(string); ok {
-					text = fmt.Sprintf("%v: %v\n", status, progress)
-				} else {
-					text = status + "\n"
-				}
-				if _, err = w.Write([]byte(text)); err != nil {
-					return err
-				}
-				w.Flush()
-			} else if aux, ok := msg["aux"].(map[string]any); ok {
-				if id, ok := aux["ID"].(string); ok {
-					imageID = id
-				}
-			}
-		}
-
-		if imageID != "" {
-			img := TemplateImage{
-				TemplateID: tmpl.ID,
-				ImageTag:   *body.ImageTag,
-				ImageID:    imageID,
-			}
-
-			_, err = tx.NewInsert().Model(&img).Exec(c.Request().Context())
-			if err != nil {
-				_ = tx.Rollback()
-				return err
-			}
-		}
-
-		if err = tx.Commit(); err != nil {
-			_ = tx.Rollback()
-			return err
-		}
-
-		return nil
-	}
-
-	if err = tx.Commit(); err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 
-	return c.JSON(http.StatusOK, &tmpl)
+	outputChan, err := mgr.buildTemplate(ctx, template, buildTemplateOptions{
+		imageTag:  *body.ImageTag,
+		buildArgs: body.BuildArgs,
+	})
+	if err != nil {
+		return err
+	}
+
+	w := c.Response()
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	for o := range outputChan {
+		switch o := o.(type) {
+		case error:
+			return err
+		case string:
+			if _, err = w.Write([]byte(o)); err != nil {
+				return err
+			}
+			w.Flush()
+		}
+	}
+
+	return nil
 }
 
 func deleteTemplate(c echo.Context) error {
-	templateName := c.Param("templateName")
-	if templateName == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
+	mgr := templateManagerFrom(c)
+	name := c.Param("templateName")
 
-	db := service.Database(c)
-
-	tx, err := db.BeginTx(c.Request().Context(), nil)
+	err := mgr.deleteTemplate(c.Request().Context(), name)
 	if err != nil {
-		return err
-	}
-
-	res, err := tx.NewDelete().Table("templates").
-		Where("name = ?", templateName).
-		Exec(c.Request().Context())
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, errTemplateNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound)
 		}
-		_ = tx.Rollback()
-		return err
-	}
-
-	count, err := res.RowsAffected()
-	if err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-
-	if count != 1 {
-		_ = tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError)
-	}
-
-	if err = tx.Commit(); err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 
@@ -330,37 +164,13 @@ func deleteTemplate(c echo.Context) error {
 }
 
 func fetchTemplateFile(c echo.Context) error {
+	mgr := templateManagerFrom(c)
 	templateName := c.Param("templateName")
-	if templateName == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
-
 	filePath := c.Param("filePath")
-	if filePath == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
 
-	db := service.Database(c)
-
-	var tmpl template
-	err := db.NewSelect().Model(&tmpl).
-		Column("id").
-		Where("name = ?", templateName).
-		Scan(c.Request().Context())
+	file, err := mgr.findTemplateFile(c.Request().Context(), templateName, filePath)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return echo.NewHTTPError(http.StatusNotFound)
-		}
-		return err
-	}
-
-	var file templateFile
-	err = db.NewSelect().Model(&file).
-		Where("template_id = ?", tmpl.ID).
-		Where("file_path = ?", filePath).
-		Scan(c.Request().Context())
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, errTemplateNotFound) || errors.Is(err, errTemplateFileNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound)
 		}
 		return err
@@ -370,54 +180,20 @@ func fetchTemplateFile(c echo.Context) error {
 }
 
 func updateTemplateFile(c echo.Context) error {
+	mgr := templateManagerFrom(c)
 	templateName := c.Param("templateName")
-	if templateName == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
-
 	filePath := c.Param("filePath")
-	if filePath == "" {
-		return echo.NewHTTPError(http.StatusNotFound)
-	}
-
-	db := service.Database(c)
-
-	tx, err := db.BeginTx(c.Request().Context(), nil)
-	if err != nil {
-		return err
-	}
-
-	var tmpl template
-	err = tx.NewSelect().Model(&tmpl).
-		Column("id").
-		Where("name = ?", templateName).
-		Scan(c.Request().Context())
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return echo.NewHTTPError(http.StatusNotFound)
-		}
-		return err
-	}
 
 	newContent, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.NewUpdate().Table("template_files").
-		Set("content = ?", newContent).
-		Where("template_id = ?", tmpl.ID).
-		Where("file_path = ?", filePath).
-		Exec(c.Request().Context())
+	err = mgr.updateTemplateFile(c.Request().Context(), templateName, filePath, newContent)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, errTemplateNotFound) || errors.Is(err, errTemplateFileNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound)
 		}
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 
@@ -427,17 +203,17 @@ func updateTemplateFile(c echo.Context) error {
 func fetchAllTemplateImages(c echo.Context) error {
 	db := service.Database(c)
 
-	var images []TemplateImage
+	var images []Image
 	err := db.NewSelect().Model(&images).Scan(c.Request().Context())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return c.JSON(http.StatusOK, make([]TemplateImage, 0))
+			return c.JSON(http.StatusOK, make([]Image, 0))
 		}
 		return err
 	}
 
 	if len(images) == 0 {
-		return c.JSON(http.StatusOK, make([]TemplateImage, 0))
+		return c.JSON(http.StatusOK, make([]Image, 0))
 	}
 
 	return c.JSON(http.StatusOK, images)

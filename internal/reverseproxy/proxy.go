@@ -87,7 +87,8 @@ func (p *ReverseProxy) handleRequest(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
 
-	first := strings.Split(subdomain, ".")[0]
+	ps := strings.Split(subdomain, ".")
+	first := ps[len(ps)-1]
 	proxy, ok := p.httpProxies[first]
 	if !ok {
 		return echo.NewHTTPError(http.StatusNotFound)
