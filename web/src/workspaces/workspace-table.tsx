@@ -29,11 +29,6 @@ import {
 import { type Workspace, WorkspaceStatus } from "./types";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Badge } from "@/components/ui/badge";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { number, object, pattern, size, string, type Infer } from "superstruct";
@@ -43,11 +38,15 @@ import {
 	FormControl,
 	FormField,
 	FormItem,
-	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { WorkspaceInfoDialog } from "./workspace-info-dialog";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 
 const WorkspaceTableRowContext = createContext<Workspace>(
 	null as unknown as Workspace,
@@ -211,19 +210,27 @@ function WorkspaceStatusButton() {
 
 function DeleteWorkspaceButton({ workspace }: { workspace: Workspace }) {
 	const { toast } = useToast();
+	const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
 	const { deleteWorkspace, status } = useDeleteWorkspace();
+	const isLoading = status.type === "loading";
 
 	useEffect(() => {
-		console.log(status.type);
-		if (status.type === "error") {
-			toast({
-				title: `Failed to delete workspace ${workspace.name}.`,
-				action: (
-					<ToastAction onClick={_deleteWorkspace} altText="Try again">
-						Try again
-					</ToastAction>
-				),
-			});
+		switch (status.type) {
+			case "error":
+				toast({
+					title: `Failed to delete workspace ${workspace.name}.`,
+					action: (
+						<ToastAction onClick={_deleteWorkspace} altText="Try again">
+							Try again
+						</ToastAction>
+					),
+				});
+				break;
+			case "ok":
+				closeConfirmation();
+				break;
+			default:
+				break;
 		}
 	}, [toast, status.type, workspace.name]);
 
@@ -231,10 +238,48 @@ function DeleteWorkspaceButton({ workspace }: { workspace: Workspace }) {
 		await deleteWorkspace(workspace.name);
 	}
 
+	function closeConfirmation() {
+		setIsConfirmationOpen(false);
+	}
+
 	return (
-		<Button variant="destructive" size="icon" onClick={_deleteWorkspace}>
-			{status.type === "loading" ? <LoadingSpinner /> : <Trash2 />}
-		</Button>
+		<Popover
+			open={isConfirmationOpen}
+			onOpenChange={(opened) => {
+				if (status.type !== "loading") {
+					setIsConfirmationOpen(opened);
+				}
+			}}
+		>
+			<PopoverTrigger asChild>
+				<Button variant="outline" size="icon">
+					{isLoading ? <LoadingSpinner /> : <Trash2 />}
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent>
+				<p className="text-sm">
+					If you delete this workspace, all data in it will be lost forever.
+				</p>
+				<div className="flex space-x-2 justify-end mt-3">
+					<Button
+						disabled={isLoading}
+						variant="secondary"
+						size="sm"
+						onClick={closeConfirmation}
+					>
+						Cancel
+					</Button>
+					<Button
+						disabled={isLoading}
+						variant="destructive"
+						size="sm"
+						onClick={_deleteWorkspace}
+					>
+						{isLoading ? <LoadingSpinner /> : "Delete"}
+					</Button>
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 }
 
