@@ -1,4 +1,4 @@
-import { create, createStore, useStore } from "zustand";
+import { createStore, useStore } from "zustand";
 import type { Template } from "./types";
 import { createContext, useContext } from "react";
 import { buildTemplate } from "./api";

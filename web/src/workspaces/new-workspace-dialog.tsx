@@ -24,7 +24,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { useTemplateImages } from "@/templates/api";
 import { superstructResolver } from "@hookform/resolvers/superstruct";
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { nonempty, object, pattern, string, type Infer } from "superstruct";
 import { useCreateWorkspace } from "./api";

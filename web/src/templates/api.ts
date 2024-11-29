@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
-import useSWR, { mutate, useSWRConfig } from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import type { Template, TemplateMeta, TemplateImage } from "./types";
-import { fetchApi, type ApiError } from "@/api";
+import { fetchApi } from "@/api";
 
 function useTemplates() {
 	return useSWR(

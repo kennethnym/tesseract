@@ -1,4 +1,12 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -12,41 +20,15 @@ import { useToast } from "@/hooks/use-toast";
 import { StopIcon } from "@radix-ui/react-icons";
 import { ToastAction } from "@radix-ui/react-toast";
 import dayjs from "dayjs";
-import { Info, Loader2, Play, Plus, Trash2 } from "lucide-react";
+import { Info, Loader2, Play, Trash2 } from "lucide-react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
-	Fragment,
-	createContext,
-	useContext,
-	useEffect,
-	useState,
-} from "react";
-import {
-	useAddWorkspacePort,
 	useChangeWorkspaceStatus,
 	useDeleteWorkspace,
 	useWorkspaces,
 } from "./api";
 import { type Workspace, WorkspaceStatus } from "./types";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { number, object, pattern, size, string, type Infer } from "superstruct";
-import { superstructResolver } from "@hookform/resolvers/superstruct";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormMessage,
-} from "@/components/ui/form";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { WorkspaceInfoDialog } from "./workspace-info-dialog";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 
 const WorkspaceTableRowContext = createContext<Workspace>(
 	null as unknown as Workspace,
@@ -293,155 +275,6 @@ function WorkspaceInfoButton() {
 			</DialogTrigger>
 			<WorkspaceInfoDialog />
 		</Dialog>
-	);
-}
-
-function WorkspaceInfoPopoverContent() {
-	const workspace = useContext(WorkspaceTableRowContext);
-	return (
-		<div className="flex flex-col">
-			<div className="grid grid-cols-3 gap-2">
-				{workspace.sshPort ? (
-					<>
-						<div className="col-span-2">
-							<p>SSH Port</p>
-						</div>
-						<p className="text-right">{workspace.sshPort}</p>
-					</>
-				) : null}
-			</div>
-			<hr className="my-2" />
-			<p className="text-sm text-muted-foreground col-span-3 mb-1">
-				Forwarded ports
-			</p>
-			<div className="grid grid-cols-3 gap-2">
-				{workspace?.ports?.map(({ port, subdomain }) => (
-					<Fragment key={port}>
-						<div className="col-span-2 flex items-center">
-							<p>{subdomain}</p>
-						</div>
-						<div className="flex items-center space-x-2">
-							<p className="text-right">{port}</p>
-							<Button variant="destructive" size="icon">
-								<Trash2 />
-							</Button>
-						</div>
-					</Fragment>
-				))}
-			</div>
-			<PortEntry />
-		</div>
-	);
-}
-
-const PortEntryForm = object({
-	portName: pattern(string(), /^[\w-]+$/),
-	port: size(number(), 0, 65536),
-});
-
-function PortEntry() {
-	const [isAddingPort, setIsAddingPort] = useState(false);
-	const { addWorkspacePort, status } = useAddWorkspacePort();
-	const workspace = useContext(WorkspaceTableRowContext);
-	const form = useForm({
-		resolver: superstructResolver(PortEntryForm),
-		disabled: status.type === "loading",
-		defaultValues: {
-			port: 1234,
-			portName: "",
-		},
-	});
-
-	function onAddPortButtonClick() {
-		if (isAddingPort) {
-		} else {
-			setIsAddingPort(true);
-		}
-	}
-
-	async function onSubmit(values: Infer<typeof PortEntryForm>) {
-		await addWorkspacePort(workspace.name, [
-			{ subdomain: values.portName, port: values.port },
-		]);
-	}
-
-	if (!isAddingPort) {
-		return (
-			<Button
-				className="col-span-3 mt-4"
-				variant="secondary"
-				size="sm"
-				onClick={onAddPortButtonClick}
-			>
-				<Plus /> Add port
-			</Button>
-		);
-	}
-
-	return (
-		<Form {...form}>
-			<form
-				className="grid grid-cols-subgrid col-span-3 gap-2"
-				onSubmit={form.handleSubmit(onSubmit)}
-			>
-				{isAddingPort ? (
-					<>
-						<FormField
-							control={form.control}
-							name="portName"
-							render={({ field }) => (
-								<FormItem className="col-span-2">
-									<FormControl>
-										<Input placeholder="Subdomain" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="port"
-							render={({ field }) => (
-								<FormItem className="col-span-1">
-									<FormControl>
-										<Input
-											className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-											// @ts-ignore
-											style={{ "-moz-appearance": "textfield" }}
-											type="number"
-											min={0}
-											max={65535}
-											placeholder="8080"
-											{...field}
-											onChange={(value) =>
-												field.onChange(value.currentTarget.valueAsNumber)
-											}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-					</>
-				) : null}
-				<Button
-					type="submit"
-					className="col-span-3 mt-2"
-					variant="secondary"
-					size="sm"
-					disabled={status.type === "loading"}
-					onClick={onAddPortButtonClick}
-				>
-					{status.type === "loading" ? (
-						<LoadingSpinner />
-					) : (
-						<>
-							<Plus /> Done
-						</>
-					)}
-				</Button>
-			</form>
-		</Form>
 	);
 }
 
