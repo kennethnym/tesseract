@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
+	"embed"
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +15,14 @@ import (
 	"tesseract/internal/service"
 	"tesseract/internal/template"
 	"tesseract/internal/workspace"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
+
+//go:embed web/dist/*
+var web embed.FS
 
 func main() {
 	execPath, err := os.Executable()
@@ -62,20 +68,19 @@ func main() {
 	cancel()
 
 	apiServer := echo.New()
-	apiServer.Use(services.Middleware())
+
+	webFS, err := fs.Sub(web, "web/dist")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	apiServer.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webFS))))
+
+	apiServer.Use(services.ReverseProxy.Middleware(), services.Middleware(), middleware.CORS())
+
 	g := apiServer.Group("/api")
 	workspace.DefineRoutes(g, services)
 	template.DefineRoutes(g)
-
-	root := echo.New()
-	root.Use(services.ReverseProxy.Middleware(), middleware.CORS())
-
-	root.Any("/*", func(c echo.Context) error {
-		req := c.Request()
-		res := c.Response()
-		apiServer.ServeHTTP(res, req)
-		return nil
-	})
 
 	apiServer.HTTPErrorHandler = func(err error, c echo.Context) {
 		var he *echo.HTTPError
@@ -90,5 +95,5 @@ func main() {
 		}
 	}
 
-	root.Logger.Fatal(root.Start(":8080"))
+	apiServer.Logger.Fatal(apiServer.Start(":8080"))
 }
