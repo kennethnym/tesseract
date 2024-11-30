@@ -129,15 +129,17 @@ function useUpdateTemplateFile(name: string) {
 async function buildTemplate({
 	imageTag,
 	templateName,
+	buildArgs,
 	onBuildOutput,
 }: {
 	imageTag: string;
 	templateName: string;
+	buildArgs: Record<string, string>;
 	onBuildOutput: (chunk: string) => void;
 }) {
 	const res = await fetchApi(`/templates/${templateName}`, {
 		method: "POST",
-		body: JSON.stringify({ imageTag }),
+		body: JSON.stringify({ imageTag, buildArgs }),
 		headers: {
 			Accept: "text/event-stream",
 		},

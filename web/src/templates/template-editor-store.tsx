@@ -10,7 +10,10 @@ interface TemplateEditorState {
 	isBuildOutputVisible: boolean;
 	buildOutput: string;
 
-	startBuild: ({ imageTag }: { imageTag: string }) => Promise<void>;
+	startBuild: ({
+		imageTag,
+		buildArgs,
+	}: { imageTag: string; buildArgs: Record<string, string> }) => Promise<void>;
 
 	setCurrentFilePath: (path: string) => void;
 
@@ -32,7 +35,7 @@ function createTemplateEditorStore({
 		isBuildOutputVisible: false,
 		buildOutput: "",
 
-		startBuild: async ({ imageTag }) => {
+		startBuild: async ({ imageTag, buildArgs }) => {
 			const state = get();
 
 			set({
@@ -44,6 +47,7 @@ function createTemplateEditorStore({
 			try {
 				await buildTemplate({
 					imageTag,
+					buildArgs,
 					templateName: state.template.name,
 					onBuildOutput: state.addBuildOutputChunk,
 				});

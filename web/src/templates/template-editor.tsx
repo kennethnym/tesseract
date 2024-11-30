@@ -3,23 +3,8 @@ import { CodeMirrorEditor } from "@/components/codemirror-editor";
 import { Button } from "@/components/ui/button.tsx";
 import {
 	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	Form,
-	FormControl,
-	FormDescription,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
 	Sidebar,
 	SidebarContent,
@@ -32,7 +17,6 @@ import {
 	SidebarProvider,
 } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
-import { superstructResolver } from "@hookform/resolvers/superstruct";
 import { Link } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -42,10 +26,9 @@ import {
 	Loader2,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { object, pattern, string, type Infer } from "superstruct";
 import { useStore } from "zustand";
 import { useTemplate, useTemplateFile, useUpdateTemplateFile } from "./api";
+import { BuildTemplateDialog } from "./build-template-dialog";
 import { templateEditorRoute } from "./routes";
 import {
 	type TemplateEditorStore,
@@ -54,11 +37,6 @@ import {
 	useTemplateEditorStore,
 } from "./template-editor-store";
 import type { Template } from "./types";
-import { DialogClose } from "@radix-ui/react-dialog";
-
-const BuildOptionForm = object({
-	imageName: pattern(string(), /^[\w-]+$/),
-});
 
 function TemplateEditor() {
 	const { templateName, _splat } = templateEditorRoute.useParams();
@@ -235,7 +213,7 @@ function EditorTopBar() {
 					</Button>
 				</DialogTrigger>
 			</header>
-			<BuildOptionDialog />
+			<BuildTemplateDialog />
 		</Dialog>
 	);
 }
@@ -328,60 +306,6 @@ function BuildOutput() {
 		<pre ref={el} className="p-4 overflow-auto">
 			{buildOutput}
 		</pre>
-	);
-}
-
-function BuildOptionDialog() {
-	const templateName = useTemplateEditorStore((state) => state.template.name);
-	const startBuild = useTemplateEditorStore((state) => state.startBuild);
-	const form = useForm({
-		resolver: superstructResolver(BuildOptionForm),
-		defaultValues: {
-			imageName: templateName,
-		},
-	});
-
-	function onSubmit(values: Infer<typeof BuildOptionForm>) {
-		startBuild({
-			imageTag: values.imageName,
-		});
-	}
-
-	return (
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Build options</DialogTitle>
-				<DialogDescription>
-					Build options for this Docker image
-				</DialogDescription>
-			</DialogHeader>
-			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)}>
-					<FormField
-						control={form.control}
-						name="imageName"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Image name</FormLabel>
-								<FormControl>
-									<Input placeholder={templateName} {...field} />
-								</FormControl>
-								<FormDescription>
-									Must only contain alphanumeric characters and "-".
-								</FormDescription>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
-					<DialogFooter className="pt-4">
-						<DialogClose asChild>
-							<Button type="submit">Build template</Button>
-						</DialogClose>
-					</DialogFooter>
-				</form>
-			</Form>
-		</DialogContent>
 	);
 }
 
