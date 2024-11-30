@@ -1,6 +1,11 @@
 import { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import type { Template, TemplateMeta, TemplateImage } from "./types";
+import type {
+	Template,
+	TemplateMeta,
+	TemplateImage,
+	BaseTemplate,
+} from "./types";
 import { fetchApi } from "@/api";
 
 function useTemplates() {
@@ -47,11 +52,16 @@ function useCreateTemplate() {
 		async ({
 			name,
 			description,
-		}: { name: string; description: string }): Promise<Template | null> => {
+			baseTemplate,
+		}: {
+			name: string;
+			description: string;
+			baseTemplate: string;
+		}): Promise<Template | null> => {
 			try {
 				const res = await fetchApi(`/templates/${name}`, {
 					method: "POST",
-					body: JSON.stringify({ description }),
+					body: JSON.stringify({ description, baseTemplate }),
 					headers: {
 						"Content-Type": "application/json",
 					},
@@ -150,6 +160,14 @@ function useTemplateImages() {
 	);
 }
 
+function useBaseTemplates() {
+	return useSWR(
+		"/base-templates",
+		(): Promise<BaseTemplate[]> =>
+			fetchApi("/base-templates").then((res) => res.json()),
+	);
+}
+
 export {
 	useTemplates,
 	useTemplate,
@@ -159,4 +177,5 @@ export {
 	buildTemplate,
 	useDeleteTemplate,
 	useTemplateImages,
+	useBaseTemplates,
 };

@@ -22,8 +22,9 @@ type templateManager struct {
 }
 
 type createTemplateOptions struct {
-	name        string
-	description string
+	baseTemplate string
+	name         string
+	description  string
 }
 
 type updateTemplateOptions struct {
@@ -38,6 +39,7 @@ type buildTemplateOptions struct {
 }
 
 var errTemplateNotFound = errors.New("template not found")
+var errBaseTemplateNotFound = errors.New("base template not found")
 var errTemplateFileNotFound = errors.New("template file not found")
 
 func (mgr *templateManager) beginTx(ctx context.Context) (bun.Tx, error) {
@@ -46,6 +48,10 @@ func (mgr *templateManager) beginTx(ctx context.Context) (bun.Tx, error) {
 		return bun.Tx{}, err
 	}
 	return tx, nil
+}
+
+func (mgr *templateManager) findBaseTemplates(ctx context.Context) ([]baseTemplate, error) {
+	return baseTemplates, nil
 }
 
 func (mgr *templateManager) findAllTemplates(ctx context.Context) ([]template, error) {
@@ -69,7 +75,7 @@ func (mgr *templateManager) findTemplate(ctx context.Context, name string) (*tem
 	var template template
 	err := mgr.db.NewSelect().Model(&template).
 		Relation("Files").
-		Where("name = ?", name).
+		Where("Name = ?", name).
 		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -91,7 +97,7 @@ func (mgr *templateManager) findTemplate(ctx context.Context, name string) (*tem
 func (mgr *templateManager) hasTemplate(ctx context.Context, name string) (bool, error) {
 	exists, err := mgr.db.NewSelect().
 		Table("templates").
-		Where("name = ?", name).
+		Where("Name = ?", name).
 		Exists(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -115,6 +121,11 @@ func (mgr *templateManager) createTemplate(ctx context.Context, opts createTempl
 
 	now := time.Now().Format(time.RFC3339)
 
+	baseTemplate, ok := baseTemplateMap[opts.baseTemplate]
+	if !ok {
+		return nil, errBaseTemplateNotFound
+	}
+
 	t := template{
 		ID:             id,
 		Name:           opts.name,
@@ -126,7 +137,7 @@ func (mgr *templateManager) createTemplate(ctx context.Context, opts createTempl
 	dockerfile := templateFile{
 		TemplateID: id,
 		FilePath:   "Dockerfile",
-		Content:    make([]byte, 0),
+		Content:    []byte(baseTemplate.Content),
 	}
 	readme := templateFile{
 		TemplateID: id,
@@ -167,7 +178,7 @@ func (mgr *templateManager) updateTemplate(ctx context.Context, name string, opt
 
 	var template template
 	err := tx.NewUpdate().Model(&template).
-		Where("name = ?", name).
+		Where("Name = ?", name).
 		Set("description = ?", opts.description).
 		Returning("*").
 		Scan(ctx)
@@ -320,7 +331,7 @@ func (mgr *templateManager) deleteTemplate(ctx context.Context, name string) err
 	}
 
 	res, err := tx.NewDelete().Table("templates").
-		Where("name = ?", name).
+		Where("Name = ?", name).
 		Exec(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -353,7 +364,7 @@ func (mgr *templateManager) findTemplateFile(ctx context.Context, templateName, 
 	var tmpl template
 	err := mgr.db.NewSelect().Model(&tmpl).
 		Column("id").
-		Where("name = ?", templateName).
+		Where("Name = ?", templateName).
 		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -386,7 +397,7 @@ func (mgr *templateManager) updateTemplateFile(ctx context.Context, templateName
 	var template template
 	err = tx.NewSelect().Model(&template).
 		Column("id").
-		Where("name = ?", templateName).
+		Where("Name = ?", templateName).
 		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

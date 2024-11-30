@@ -19,4 +19,15 @@ interface FileInTemplate {
 	content: string;
 }
 
-export type { TemplateMeta, Template, FileInTemplate, TemplateImage };
+interface BaseTemplate {
+	name: string;
+	id: string;
+}
+
+export type {
+	TemplateMeta,
+	Template,
+	FileInTemplate,
+	TemplateImage,
+	BaseTemplate,
+};

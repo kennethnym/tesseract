@@ -1,51 +1,26 @@
-import { PageHeader } from "@/components/ui/page-header.tsx";
+import { MainSidebar } from "@/components/main-sidebar.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Info, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { PageHeader } from "@/components/ui/page-header.tsx";
 import { Page } from "@/components/ui/page.tsx";
 import { SidebarProvider } from "@/components/ui/sidebar.tsx";
-import { MainSidebar } from "@/components/main-sidebar.tsx";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
-	TableHeader,
-	TableRow,
-	TableHead,
 	TableBody,
 	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
 } from "@/components/ui/table";
-import {
-	Dialog,
-	DialogTrigger,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogDescription,
-	DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Link, useRouter } from "@tanstack/react-router";
-import { object, pattern, string, type Infer } from "superstruct";
-import { useForm } from "react-hook-form";
-import { superstructResolver } from "@hookform/resolvers/superstruct";
-import {
-	Form,
-	FormControl,
-	FormDescription,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { useCreateTemplate, useDeleteTemplate, useTemplates } from "./api";
-import { Skeleton } from "@/components/ui/skeleton";
-import dayjs from "dayjs";
-import { ToastAction } from "@radix-ui/react-toast";
-import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-
-const NewTemplateForm = object({
-	templateName: pattern(string(), /^[\w-]+$/),
-	templateDescription: string(),
-});
+import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@radix-ui/react-toast";
+import { Link } from "@tanstack/react-router";
+import dayjs from "dayjs";
+import { Info, Pencil, Plus, Trash2 } from "lucide-react";
+import { useDeleteTemplate, useTemplates } from "./api";
+import { NewTemplateDialog } from "./new-template-dialog";
 
 function TemplatesDashboard() {
 	return (
@@ -169,85 +144,6 @@ function TemplateTable() {
 			</Table>
 			{placeholder()}
 		</>
-	);
-}
-
-function NewTemplateDialog() {
-	const router = useRouter();
-	const { createTemplate, isCreatingTemplate } = useCreateTemplate();
-
-	const form = useForm({
-		resolver: superstructResolver(NewTemplateForm),
-		disabled: isCreatingTemplate,
-		defaultValues: {
-			templateName: "",
-			templateDescription: "",
-		},
-	});
-
-	async function onSubmit(values: Infer<typeof NewTemplateForm>) {
-		const createdTemplate = await createTemplate({
-			name: values.templateName,
-			description: values.templateDescription,
-		});
-		if (createdTemplate) {
-			router.navigate({ to: `/templates/${createdTemplate.name}` });
-		}
-	}
-
-	return (
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>New template</DialogTitle>
-				<DialogDescription>
-					Create a new template for workspaces
-				</DialogDescription>
-			</DialogHeader>
-			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-					<FormField
-						control={form.control}
-						name="templateName"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Template name</FormLabel>
-								<FormControl>
-									<Input placeholder="my-template" {...field} />
-								</FormControl>
-								<FormDescription>
-									Must only contain alphanumeric characters and "-".
-								</FormDescription>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
-					<FormField
-						control={form.control}
-						name="templateDescription"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Description</FormLabel>
-								<FormControl>
-									<Input {...field} />
-								</FormControl>
-								<FormDescription>
-									Optional description for this template
-								</FormDescription>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
-					<DialogFooter>
-						<Button disabled={isCreatingTemplate} type="submit">
-							{isCreatingTemplate ? <Loader2 className="animate-spin" /> : null}
-							Create
-						</Button>
-					</DialogFooter>
-				</form>
-			</Form>
-		</DialogContent>
 	);
 }
 

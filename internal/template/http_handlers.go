@@ -14,6 +14,7 @@ type createTemplateRequestBody struct {
 	Description   string `json:"description"`
 	Content       string `json:"content"`
 	Documentation string `json:"documentation"`
+	BaseTemplate  string `json:"baseTemplate"`
 }
 
 type postTemplateRequestBody struct {
@@ -27,6 +28,15 @@ type postTemplateRequestBody struct {
 func fetchAllTemplates(c echo.Context) error {
 	mgr := templateManagerFrom(c)
 	templates, err := mgr.findAllTemplates(c.Request().Context())
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, templates)
+}
+
+func fetchBaseTemplates(c echo.Context) error {
+	mgr := templateManagerFrom(c)
+	templates, err := mgr.findBaseTemplates(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -79,8 +89,9 @@ func createTemplate(c echo.Context) error {
 	}
 
 	createdTemplate, err := mgr.createTemplate(c.Request().Context(), createTemplateOptions{
-		name:        name,
-		description: body.Description,
+		name:         name,
+		description:  body.Description,
+		baseTemplate: body.BaseTemplate,
 	})
 	if err != nil {
 		return err

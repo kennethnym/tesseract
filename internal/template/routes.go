@@ -14,4 +14,5 @@ func DefineRoutes(g *echo.Group, services service.Services) {
 	g.GET("/templates/:templateName/:filePath", fetchTemplateFile, validateTemplateName, validateTemplateFilePath)
 	g.POST("/templates/:templateName/:filePath", updateTemplateFile, validateTemplateName, validateTemplateFilePath)
 	g.GET("/template-images", fetchAllTemplateImages)
+	g.GET("/base-templates", fetchBaseTemplates)
 }
