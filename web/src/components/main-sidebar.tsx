@@ -17,7 +17,7 @@ function MainSidebar() {
 			<SidebarHeader>
 				<div className="flex flex-col p-2">
 					<p className="font-bold">Tesseract</p>
-					<p className="text-xs opacity-50">v0.1.0</p>
+					<p className="text-xs opacity-50">{import.meta.env.VITE_VERSION}</p>
 				</div>
 			</SidebarHeader>
 			<SidebarSeparator />
