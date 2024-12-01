@@ -126,9 +126,6 @@ function TemplateTable() {
 											</div>
 										</Link>
 									</Button>
-									<Button variant="outline" size="icon">
-										<Info />
-									</Button>
 									<Button
 										variant="outline"
 										size="icon"
