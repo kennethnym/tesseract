@@ -74,7 +74,6 @@ function TemplateEditor() {
 }
 
 function TemplateNotFound() {
-	const { templateName } = templateEditorRoute.useParams();
 	const router = useRouter();
 
 	return (
