@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -68,13 +67,11 @@ func main() {
 	cancel()
 
 	apiServer := echo.New()
-
-	webFS, err := fs.Sub(web, "web/dist")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	apiServer.GET("/*", echo.WrapHandler(http.FileServer(http.FS(webFS))))
+	apiServer.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		HTML5:      true,
+		Root:       "web/dist",
+		Filesystem: http.FS(web),
+	}))
 
 	apiServer.Use(services.ReverseProxy.Middleware(), services.Middleware(), middleware.CORS())
 
