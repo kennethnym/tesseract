@@ -1,10 +1,7 @@
 import { ApiError } from "@/api";
 import { CodeMirrorEditor } from "@/components/codemirror-editor";
 import { Button } from "@/components/ui/button.tsx";
-import {
-	Dialog,
-	DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
 	Sidebar,
 	SidebarContent,
@@ -17,7 +14,7 @@ import {
 	SidebarProvider,
 } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import {
 	ArrowLeft,
 	ChevronDown,
@@ -52,18 +49,13 @@ function TemplateEditor() {
 
 	if (error || !template) {
 		if (error === ApiError.NotFound) {
-			return (
-				<main className="w-full h-full flex flex-col items-center justify-center space-y-2">
-					<p>Template does not exist</p>
-					<Button variant="secondary">Create template</Button>
-				</main>
-			);
+			return <TemplateNotFound />;
 		}
 
 		let message = "";
 		switch (error) {
 			case ApiError.Network:
-				message = "We are having trouble contacting the server.";
+				message = "Having trouble contacting the server.";
 				break;
 			default:
 				message = "An error occurred on our end.";
@@ -79,6 +71,25 @@ function TemplateEditor() {
 	}
 
 	return <_TemplateEditor template={template} currentFilePath={_splat ?? ""} />;
+}
+
+function TemplateNotFound() {
+	const { templateName } = templateEditorRoute.useParams();
+	const router = useRouter();
+
+	return (
+		<main className="w-full h-full flex flex-col items-center justify-center space-y-2">
+			<p>Template does not exist</p>
+			<Button
+				variant="secondary"
+				onClick={() => {
+					router.navigate({ to: "/templates", replace: true });
+				}}
+			>
+				Show all templates
+			</Button>
+		</main>
+	);
 }
 
 function _TemplateEditor({
