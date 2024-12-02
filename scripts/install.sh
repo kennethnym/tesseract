@@ -21,9 +21,8 @@ tar -xvzf /tmp/tesseract/tesseract.tar.gz -C /tmp/tesseract
 
 sudo mkdir -p /opt/tesseract
 sudo mv /tmp/tesseract/tesseract /opt/tesseract
-sudo chown $(whoami) /opt/tesseract
-sudo chown $(whoami) /opt/tesseract/*
-sudo cat >/opt/tesseract/config.json <<EOF
+sudo chown "$(whoami)" /opt/tesseract
+cat >/opt/tesseract/config.json <<EOF
 {
   "port": 80,
   "databasePath": "./data.sqlite",
@@ -31,6 +30,7 @@ sudo cat >/opt/tesseract/config.json <<EOF
   "debug": false
 }
 EOF
+sudo chown "$(whoami)" /opt/tesseract/*
 
 rm -r /tmp/tesseract
 
