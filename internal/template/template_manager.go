@@ -268,6 +268,8 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 	outputChan := make(chan any)
 
 	go func() {
+		defer close(outputChan)
+
 		scanner := bufio.NewScanner(res.Body)
 		var imageID string
 
@@ -327,8 +329,6 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 		if img != nil {
 			outputChan <- img
 		}
-
-		close(outputChan)
 	}()
 
 	return outputChan, nil
