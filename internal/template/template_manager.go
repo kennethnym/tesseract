@@ -288,6 +288,7 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 				outputChan <- stream
 			} else if errmsg, ok := msg["error"].(string); ok {
 				outputChan <- errmsg + "\n"
+				return
 			} else if status, ok := msg["status"].(string); ok {
 				var text string
 				if progress, ok := msg["progress"].(string); ok {
@@ -312,10 +313,14 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 				ImageID:    imageID,
 			}
 
-			_, err = tx.NewInsert().Model(img).Exec(ctx)
+			_, err = tx.NewInsert().Model(img).
+				On("CONFLICT DO UPDATE").
+				Set("image_id = EXCLUDED.image_id").
+				Exec(ctx)
 			if err != nil {
 				_ = tx.Rollback()
 				outputChan <- err
+				return
 			}
 		}
 
@@ -323,6 +328,7 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 			if err = tx.Commit(); err != nil {
 				_ = tx.Rollback()
 				outputChan <- err
+				return
 			}
 		}
 
