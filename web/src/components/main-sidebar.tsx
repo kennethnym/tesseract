@@ -8,7 +8,7 @@ import {
 	SidebarMenuItem,
 	SidebarSeparator,
 } from "@/components/ui/sidebar.tsx";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutPanelLeft, ScrollText } from "lucide-react";
 
 function MainSidebar() {
@@ -23,27 +23,38 @@ function MainSidebar() {
 			<SidebarSeparator />
 			<SidebarContent>
 				<SidebarGroup>
-					<SidebarMenu>
-						<SidebarMenuItem>
-							<SidebarMenuButton asChild>
-								<Link to="/">
-									<LayoutPanelLeft />
-									Workspaces
-								</Link>
-							</SidebarMenuButton>
-						</SidebarMenuItem>
-						<SidebarMenuItem>
-							<SidebarMenuButton asChild>
-								<Link to="/templates">
-									<ScrollText />
-									Templates
-								</Link>
-							</SidebarMenuButton>
-						</SidebarMenuItem>
-					</SidebarMenu>
+					<MainSidebarMenu />
 				</SidebarGroup>
 			</SidebarContent>
 		</Sidebar>
+	);
+}
+
+function MainSidebarMenu() {
+	const router = useRouterState();
+
+	return (
+		<SidebarMenu>
+			<SidebarMenuItem>
+				<SidebarMenuButton asChild isActive={router.location.pathname === "/"}>
+					<Link to="/">
+						<LayoutPanelLeft />
+						Workspaces
+					</Link>
+				</SidebarMenuButton>
+			</SidebarMenuItem>
+			<SidebarMenuItem>
+				<SidebarMenuButton
+					asChild
+					isActive={router.location.pathname === "/templates"}
+				>
+					<Link to="/templates">
+						<ScrollText />
+						Templates
+					</Link>
+				</SidebarMenuButton>
+			</SidebarMenuItem>
+		</SidebarMenu>
 	);
 }
 
