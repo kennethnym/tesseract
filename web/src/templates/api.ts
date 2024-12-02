@@ -167,6 +167,7 @@ function useBaseTemplates() {
 		"/base-templates",
 		(): Promise<BaseTemplate[]> =>
 			fetchApi("/base-templates").then((res) => res.json()),
+		{ refreshInterval: Number.POSITIVE_INFINITY },
 	);
 }
 

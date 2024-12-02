@@ -268,7 +268,7 @@ function DeleteWorkspaceButton({ workspace }: { workspace: Workspace }) {
 function WorkspaceInfoButton() {
 	return (
 		<Dialog>
-			<DialogTrigger>
+			<DialogTrigger asChild>
 				<Button variant="outline" size="icon">
 					<Info />
 				</Button>

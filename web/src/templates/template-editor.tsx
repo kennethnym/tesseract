@@ -225,7 +225,7 @@ function EditorTopBar() {
 		<Dialog>
 			<header className="sticky top-0 flex shrink-0 items-center justify-between gap-2 border-b bg-background p-4">
 				<p className="font-bold">{currentFilePath}</p>
-				<DialogTrigger>
+				<DialogTrigger asChild>
 					<Button>
 						{isBuildInProgress ? (
 							<Loader2 className="animate-spin" />
