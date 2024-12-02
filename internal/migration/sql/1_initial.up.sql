@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS workspaces
     container_id TEXT NOT NULL,
     image_tag    TEXT NOT NULL,
     created_at   TEXT NOT NULL,
+    runtime      TEXT NOT NULL,
 
     CONSTRAINT pk_workspaces PRIMARY KEY (id)
 );

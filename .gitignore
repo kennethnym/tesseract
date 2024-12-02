@@ -214,3 +214,5 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,linux,go,goland
 
 data.sqlite
+
+dist/

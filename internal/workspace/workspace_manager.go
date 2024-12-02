@@ -31,10 +31,12 @@ type workspaceManager struct {
 type createWorkspaceOptions struct {
 	name    string
 	imageID string
+	runtime string
 }
 
 var errImageNotFound = errors.New("image not found")
 var errWorkspaceNotFound = errors.New("workspace not found")
+var errRuntimeNotFound = errors.New("runtime not found")
 
 func (mgr workspaceManager) findAllWorkspaces(ctx context.Context) ([]workspace, error) {
 	var workspaces []workspace
@@ -126,6 +128,16 @@ func (mgr workspaceManager) hasWorkspace(ctx context.Context, name string) (bool
 }
 
 func (mgr workspaceManager) createWorkspace(ctx context.Context, opts createWorkspaceOptions) (*workspace, error) {
+	info, err := mgr.dockerClient.Info(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, ok := info.Runtimes[opts.runtime]
+	if !ok {
+		return nil, errRuntimeNotFound
+	}
+
 	tx, err := mgr.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -157,6 +169,7 @@ func (mgr workspaceManager) createWorkspace(ctx context.Context, opts createWork
 				{"127.0.0.1", ""},
 			},
 		},
+		Runtime: opts.runtime,
 	}
 
 	res, err := mgr.dockerClient.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, opts.name)
@@ -371,4 +384,21 @@ func (mgr workspaceManager) deletePortMapping(ctx context.Context, workspace *wo
 	mgr.reverseProxy.RemoveEntry(portMapping.Subdomain)
 
 	return nil
+}
+
+func (mgr workspaceManager) findAvailableWorkspaceRuntimes(ctx context.Context) ([]workspaceRuntime, error) {
+	info, err := mgr.dockerClient.Info(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	runtimes := make([]workspaceRuntime, 0, len(info.Runtimes))
+	for name, r := range info.Runtimes {
+		runtimes = append(runtimes, workspaceRuntime{
+			Name: name,
+			Path: r.Path,
+		})
+	}
+
+	return runtimes, nil
 }

@@ -197,6 +197,7 @@ function BuildArgRow({
 
 	const finishEditing = useCallback(() => {
 		onFinish({ argName, arg });
+		setIsEditing(false);
 	}, [argName, arg, onFinish]);
 
 	return (

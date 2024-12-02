@@ -10,6 +10,7 @@ import (
 
 type createWorkspaceRequestBody struct {
 	ImageID string `json:"imageId"`
+	Runtime string `json:"runtime"`
 }
 
 type updateWorkspaceRequestBody struct {
@@ -79,6 +80,7 @@ func createWorkspace(c echo.Context, workspaceName string) error {
 	w, err := mgr.createWorkspace(c.Request().Context(), createWorkspaceOptions{
 		name:    workspaceName,
 		imageID: body.ImageID,
+		runtime: body.Runtime,
 	})
 	if err != nil {
 		if errors.Is(err, errImageNotFound) {
@@ -163,4 +165,13 @@ func deleteWorkspacePortMapping(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+func fetchWorkspaceRuntimes(c echo.Context) error {
+	mgr := workspaceManagerFrom(c)
+	runtimes, err := mgr.findAvailableWorkspaceRuntimes(c.Request().Context())
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, runtimes)
 }

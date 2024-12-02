@@ -4,9 +4,16 @@ import {
 	WorkspaceStatus,
 	type Workspace,
 	type WorkspacePortMapping,
+	type WorkspaceRuntime,
 } from "./types";
 import { useCallback, useState } from "react";
 import type { QueryStatus } from "@/lib/query";
+
+interface CreateWorkspaceConfig {
+	workspaceName: string;
+	imageId: string;
+	runtime: string;
+}
 
 function useWorkspaces() {
 	return useSWR(
@@ -24,17 +31,15 @@ function useCreateWorkspace() {
 		async ({
 			workspaceName,
 			imageId,
-		}: {
-			workspaceName: string;
-			imageId: string;
-		}): Promise<Workspace | null> => {
+			runtime,
+		}: CreateWorkspaceConfig): Promise<Workspace | null> => {
 			setStatus({ type: "loading" });
 			try {
 				const workspace = await mutate(
 					"/workspaces",
 					fetchApi(`/workspaces/${workspaceName}`, {
 						method: "POST",
-						body: JSON.stringify({ imageId }),
+						body: JSON.stringify({ imageId, runtime }),
 						headers: {
 							"Content-Type": "application/json",
 						},
@@ -195,10 +200,19 @@ function useAddWorkspacePort() {
 	return { addWorkspacePort, status };
 }
 
+function useWorkspaceRuntimes() {
+	return useSWR(
+		"/workspace-runtimes",
+		(): Promise<WorkspaceRuntime[]> =>
+			fetchApi("/workspace-runtimes").then((res) => res.json()),
+	);
+}
+
 export {
 	useWorkspaces,
 	useCreateWorkspace,
 	useChangeWorkspaceStatus,
 	useDeleteWorkspace,
 	useAddWorkspacePort,
+	useWorkspaceRuntimes,
 };

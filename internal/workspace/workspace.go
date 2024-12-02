@@ -36,6 +36,8 @@ type workspace struct {
 	Status status `bun:"-" json:"status"`
 
 	PortMappings []portMapping `bun:"rel:has-many,join:id=workspace_id" json:"ports,omitempty"`
+
+	Runtime string `json:"runtime"`
 }
 
 type portMapping struct {
@@ -46,6 +48,11 @@ type portMapping struct {
 	Subdomain     string    `json:"subdomain"`
 
 	Workspace workspace `bun:"rel:belongs-to,join:workspace_id=id" json:"-"`
+}
+
+type workspaceRuntime struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 // status represents the status of a workspace.

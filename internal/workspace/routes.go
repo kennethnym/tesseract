@@ -11,4 +11,5 @@ func DefineRoutes(g *echo.Group, services service.Services) {
 	g.POST("/workspaces/:workspaceName", updateOrCreateWorkspace, currentWorkspaceMiddleware(true))
 	g.DELETE("/workspaces/:workspaceName", deleteWorkspace, currentWorkspaceMiddleware(false))
 	g.DELETE("/workspaces/:workspaceName/forwarded-ports/:portName", deleteWorkspacePortMapping, currentWorkspaceMiddleware(false))
+	g.GET("/workspace-runtimes", fetchWorkspaceRuntimes)
 }

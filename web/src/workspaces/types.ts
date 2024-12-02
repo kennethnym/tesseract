@@ -20,5 +20,10 @@ interface Workspace {
 	ports?: WorkspacePortMapping[];
 }
 
+interface WorkspaceRuntime {
+	name: string;
+	path: string;
+}
+
 export { WorkspaceStatus };
-export type { Workspace, WorkspacePortMapping };
+export type { Workspace, WorkspaceRuntime, WorkspacePortMapping };
