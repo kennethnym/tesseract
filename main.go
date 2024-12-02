@@ -31,7 +31,7 @@ func main() {
 	}
 
 	var configPath string
-	flag.StringVar(&configPath, "config", filepath.Join(execPath, "config.json"), "absolute/relative path to the config file.")
+	flag.StringVar(&configPath, "config", filepath.Join(filepath.Dir(execPath), "config.json"), "absolute/relative path to the config file.")
 
 	flag.Parse()
 
