@@ -46,6 +46,15 @@ i am open to feature requests. however, limited time/effort will be spent on thi
 The installation script will install tesseract to `/opt/tesseract/`. To start tesseract, run the `tesseract` binary,
 which runs tesseract in foreground.
 
+You can also run tesseract in the background:
+
+```shell
+cd /opt/tesseract
+nohup ./tesseract > /var/log/tesseract.log 2>&1 &
+```
+
+Write down the PID so that you can kill it later.
+
 ## Configuration
 
 A `config.json` must be present in `/opt/tesseract`. It contains configurable options for tesseract:
