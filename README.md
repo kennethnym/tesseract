@@ -1,5 +1,7 @@
 # tesseract
 
+![tesseract dashboard](/docs/screenshots/tesseract-screenshot.png)
+
 tesseract is a Docker-based cloud development environments that lets you create and manage isolated development
 environments. it is created because existing solutions are overengineered and missing things that i need.
 
