@@ -20,6 +20,7 @@ interface CodeMirrorEditorProps {
 	initialValue: string;
 	className?: string;
 	onValueChanged?: (path: string, value: string) => void;
+	vimMode: boolean;
 }
 
 function languageExtensionFrom(path: string) {
@@ -53,12 +54,14 @@ function CodeMirrorEditor({
 	initialValue,
 	onValueChanged,
 	className,
+	vimMode,
 }: CodeMirrorEditorProps) {
 	const editorElRef = useRef<HTMLDivElement | null>(null);
 	const editorStates = useRef<Map<string, EditorState>>(new Map());
 	const editorViewRef = useRef<EditorView | null>(null);
 	const uiMode = useUiMode();
 	const editorThemeCompartment = useRef(new Compartment());
+	const vimCompartment = useRef(new Compartment());
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: this only needs to be called once.
 	useEffect(() => {
@@ -91,10 +94,10 @@ function CodeMirrorEditor({
 
 	function createEditorState(path: string, initialValue: string) {
 		const exts: Extension[] = [
+			vimCompartment.current.of(vimMode ? vim() : []),
 			basicSetup,
 			baseEditorTheme,
 			editorThemeCompartment.current.of(uiMode === "light" ? [] : oneDark),
-			vim(),
 			EditorView.updateListener.of((update) => {
 				editorStates.current.set(path, update.state);
 				if (update.docChanged) {
@@ -129,6 +132,12 @@ function CodeMirrorEditor({
 			effects: effect,
 		});
 	}, [uiMode]);
+
+	useEffect(() => {
+		editorViewRef.current?.dispatch({
+			effects: vimCompartment.current.reconfigure(vimMode ? vim() : []),
+		});
+	}, [vimMode]);
 
 	return <div className={className} ref={editorElRef} />;
 }

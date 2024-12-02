@@ -1,7 +1,6 @@
 import { API_ERROR_BAD_TEMPLATE, ApiError } from "@/api";
 import { CodeMirrorEditor } from "@/components/codemirror-editor";
 import { Button } from "@/components/ui/button.tsx";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
 	Sidebar,
 	SidebarContent,
@@ -15,17 +14,10 @@ import {
 } from "@/components/ui/sidebar.tsx";
 import { cn } from "@/lib/utils";
 import { Link, useRouter } from "@tanstack/react-router";
-import {
-	ArrowLeft,
-	ChevronDown,
-	ChevronUp,
-	Hammer,
-	Loader2,
-} from "lucide-react";
-import { useEffect, useRef } from "react";
+import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useEffect, useId, useRef } from "react";
 import { useStore } from "zustand";
 import { useTemplate, useTemplateFile, useUpdateTemplateFile } from "./api";
-import { BuildTemplateDialog } from "./build-template-dialog";
 import { templateEditorRoute } from "./routes";
 import {
 	type TemplateEditorStore,
@@ -36,6 +28,7 @@ import {
 import type { Template } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { TemplateEditorTopBar } from "./template-editor-top-bar";
 
 function TemplateEditor() {
 	const { templateName, _splat } = templateEditorRoute.useParams();
@@ -99,7 +92,11 @@ function _TemplateEditor({
 }: { template: Template; currentFilePath: string }) {
 	const store = useRef<TemplateEditorStore | null>(null);
 	if (!store.current) {
-		store.current = createTemplateEditorStore({ template, currentFilePath });
+		store.current = createTemplateEditorStore({
+			template,
+			currentFilePath,
+			isVimModeEnabled: localStorage.getItem("vimModeEnabled") === "true",
+		});
 	}
 
 	const setCurrentFilePath = useStore(
@@ -116,7 +113,7 @@ function _TemplateEditor({
 			<SidebarProvider>
 				<EditorSidebar />
 				<div className="flex flex-col w-full min-w-0">
-					<EditorTopBar />
+					<TemplateEditorTopBar />
 					<main className="w-full h-full flex flex-col">
 						<Editor />
 						<TemplateBuildOutputPanel />
@@ -141,6 +138,9 @@ function Editor() {
 	const { updateTemplateFile, error: updateError } =
 		useUpdateTemplateFile(templateName);
 	const { toast } = useToast();
+	const isVimModeEnabled = useTemplateEditorStore(
+		(state) => state.isVimModeEnabled,
+	);
 
 	useEffect(() => {
 		if (updateError) {
@@ -211,35 +211,8 @@ function Editor() {
 			path={currentPath}
 			initialValue={fileContent}
 			onValueChanged={onValueChanged}
+			vimMode={isVimModeEnabled}
 		/>
-	);
-}
-
-function EditorTopBar() {
-	const currentFilePath = useTemplateEditorStore(
-		(state) => state.currentFilePath,
-	);
-	const isBuildInProgress = useTemplateEditorStore(
-		(state) => state.isBuildInProgress,
-	);
-
-	return (
-		<Dialog>
-			<header className="sticky top-0 flex shrink-0 items-center justify-between gap-2 border-b bg-background p-4">
-				<p className="font-bold">{currentFilePath}</p>
-				<DialogTrigger asChild>
-					<Button>
-						{isBuildInProgress ? (
-							<Loader2 className="animate-spin" />
-						) : (
-							<Hammer />
-						)}{" "}
-						Build
-					</Button>
-				</DialogTrigger>
-			</header>
-			<BuildTemplateDialog />
-		</Dialog>
 	);
 }
 

@@ -9,6 +9,7 @@ interface TemplateEditorState {
 	currentFilePath: string;
 	isBuildInProgress: boolean;
 	isBuildOutputVisible: boolean;
+	isVimModeEnabled: boolean;
 	buildOutput: string;
 	buildError: ApiErrorResponse | null;
 
@@ -22,6 +23,8 @@ interface TemplateEditorState {
 	addBuildOutputChunk: (chunk: string) => void;
 
 	toggleBuildOutput: () => void;
+
+	setIsVimModeEnabled: (enabled: boolean) => void;
 }
 
 type TemplateEditorStore = ReturnType<typeof createTemplateEditorStore>;
@@ -29,10 +32,12 @@ type TemplateEditorStore = ReturnType<typeof createTemplateEditorStore>;
 function createTemplateEditorStore({
 	template,
 	currentFilePath,
-}: { template: Template; currentFilePath: string }) {
+	isVimModeEnabled,
+}: { template: Template; currentFilePath: string; isVimModeEnabled: boolean }) {
 	return createStore<TemplateEditorState>()((set, get) => ({
 		template,
 		currentFilePath,
+		isVimModeEnabled,
 		isBuildInProgress: false,
 		isBuildOutputVisible: false,
 		buildOutput: "",
@@ -78,6 +83,9 @@ function createTemplateEditorStore({
 				...state,
 				isBuildOutputVisible: !state.isBuildOutputVisible,
 			})),
+
+		setIsVimModeEnabled: (enabled: boolean) =>
+			set({ isVimModeEnabled: enabled }),
 	}));
 }
 
