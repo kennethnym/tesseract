@@ -117,7 +117,7 @@ Click on "Add port":
 
 ![Workspace information dialog when adding a new port](/docs/screenshots/workspace-info-dialog-adding-port.png)
 
-For "subdomain", enter a subdomain that you want to forward the port to. For example, you can forward port 80 to the `web` subdomain. Port 80 of the workspace is now accessible via `web.myhost.com`, where `myhost.com` is where you are hosting tesseract.
+For "subdomain", enter a subdomain that you want to forward the port to. For example, you can forward port 80 to the `web` subdomain. Port 80 of the workspace is now accessible via `*.web.myhost.com`, where `myhost.com` is where you are hosting tesseract.
 
 ### SSH access
 
