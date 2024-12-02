@@ -192,7 +192,7 @@ function NewWorkspaceForm({
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Image for this workspace</FormLabel>
-							<Select onValueChange={field.onChange} defaultValue={field.value}>
+							<Select onValueChange={field.onChange} value={field.value}>
 								<FormControl>
 									<SelectTrigger>
 										<SelectValue placeholder="Select an image" />
@@ -217,7 +217,7 @@ function NewWorkspaceForm({
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Docker runtime</FormLabel>
-							<Select onValueChange={field.onChange} defaultValue={field.value}>
+							<Select onValueChange={field.onChange} value={field.value}>
 								<FormControl>
 									<SelectTrigger>
 										<SelectValue placeholder="Select a Docker runtime" />

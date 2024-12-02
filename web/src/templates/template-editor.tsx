@@ -34,6 +34,8 @@ import {
 	useTemplateEditorStore,
 } from "./template-editor-store";
 import type { Template } from "./types";
+import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 function TemplateEditor() {
 	const { templateName, _splat } = templateEditorRoute.useParams();
@@ -134,7 +136,18 @@ function Editor() {
 		error,
 	} = useTemplateFile(templateName, currentPath);
 	const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const { updateTemplateFile } = useUpdateTemplateFile(templateName);
+	const { updateTemplateFile, error: updateError } =
+		useUpdateTemplateFile(templateName);
+	const { toast } = useToast();
+
+	useEffect(() => {
+		if (updateError) {
+			toast({
+				variant: "destructive",
+				title: "Failed to save template",
+			});
+		}
+	}, [updateError, toast]);
 
 	useEffect(
 		() => () => {

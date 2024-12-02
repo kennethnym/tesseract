@@ -29,6 +29,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import type { BaseTemplate } from "./types";
 
 const NewTemplateForm = object({
 	baseTemplate: nonempty(string()),
@@ -45,12 +46,34 @@ function NewTemplateDialog() {
 					Create a new template for workspaces
 				</DialogDescription>
 			</DialogHeader>
-			<TemplateForm />
+			<TemplateFormContainer />
 		</DialogContent>
 	);
 }
 
-function TemplateForm() {
+function TemplateFormContainer() {
+	const { data: baseTemplates, isLoading, error } = useBaseTemplates();
+
+	if (isLoading) {
+		return (
+			<div className="w-full flex items-center justify-center">
+				<LoadingSpinner />
+			</div>
+		);
+	}
+
+	if (error || !baseTemplates) {
+		return (
+			<p className="opacity-80">
+				An error occurred when fetching available options.
+			</p>
+		);
+	}
+
+	return <TemplateForm baseTemplates={baseTemplates} />;
+}
+
+function TemplateForm({ baseTemplates }: { baseTemplates: BaseTemplate[] }) {
 	const router = useRouter();
 	const { createTemplate, isCreatingTemplate } = useCreateTemplate();
 	const form = useForm({
@@ -74,24 +97,6 @@ function TemplateForm() {
 		}
 	}
 
-	const { data: baseTemplates, isLoading, error } = useBaseTemplates();
-
-	if (isLoading) {
-		return (
-			<div className="w-full flex items-center justify-center">
-				<LoadingSpinner />
-			</div>
-		);
-	}
-
-	if (error || !baseTemplates) {
-		return (
-			<p className="opacity-80">
-				An error occurred when fetching available options.
-			</p>
-		);
-	}
-
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -101,7 +106,7 @@ function TemplateForm() {
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Base template</FormLabel>
-							<Select onValueChange={field.onChange} defaultValue={field.value}>
+							<Select onValueChange={field.onChange} value={field.value}>
 								<FormControl>
 									<SelectTrigger>
 										<SelectValue placeholder="Select a base template" />
