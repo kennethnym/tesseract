@@ -12,6 +12,7 @@ type Config struct {
 	TemplateDirectoryPath string `json:"templateDirectoryPath"`
 	HostKeyDirectoryPath  string `json:"hostKeyDirectoryPath"`
 	HostName              string `json:"hostName"`
+	Debug                 bool   `json:"debug"`
 }
 
 const defaultPort = 8080

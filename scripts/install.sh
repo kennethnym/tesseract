@@ -27,7 +27,8 @@ sudo cat >/opt/tesseract/config.json <<EOF
 {
   "port": 80,
   "databasePath": "./data.sqlite",
-  "hostName": "HOSTNAME"
+  "hostName": "HOSTNAME",
+  "debug": false
 }
 EOF
 

@@ -68,7 +68,9 @@ func Initialize(config Config) (Services, error) {
 		return Services{}, err
 	}
 	bundb := bun.NewDB(db, sqlitedialect.New())
-	bundb.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+	if config.Debug {
+		bundb.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+	}
 
 	sshProxy := sshproxy.New()
 
