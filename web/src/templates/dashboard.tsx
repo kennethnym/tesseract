@@ -21,6 +21,7 @@ import dayjs from "dayjs";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useDeleteTemplate, useTemplates } from "./api";
 import { NewTemplateDialog } from "./new-template-dialog";
+import React from "react";
 
 function TemplatesDashboard() {
 	return (
@@ -30,26 +31,33 @@ function TemplatesDashboard() {
 			</aside>
 			<Page>
 				<PageHeader>Templates</PageHeader>
-				<Dialog>
-					<main>
-						<DialogTrigger asChild>
-							<div className="flex flex-row py-4">
-								<Button variant="secondary" size="sm">
-									<Plus /> New template
-								</Button>
-							</div>
-						</DialogTrigger>
-						<TemplateTable />
-					</main>
-					<NewTemplateDialog />
-				</Dialog>
+				<Main />
 				<Toaster />
 			</Page>
 		</SidebarProvider>
 	);
 }
 
-function TemplateTable() {
+function Main() {
+	return (
+		<Dialog>
+			<main>
+				<DialogTrigger asChild>
+					<div className="flex flex-row py-4">
+						<Button variant="secondary" size="sm">
+							<Plus /> New template
+						</Button>
+					</div>
+				</DialogTrigger>
+				<TemplateTable />
+			</main>
+			<NewTemplateDialog />
+		</Dialog>
+	);
+}
+
+const TemplateTable = React.memo(_TemplateTable, () => true);
+function _TemplateTable() {
 	const { data: templates, isLoading } = useTemplates();
 	const deleteTemplate = useDeleteTemplate();
 	const { toast } = useToast();

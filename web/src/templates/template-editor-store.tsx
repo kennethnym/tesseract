@@ -58,7 +58,6 @@ function createTemplateEditorStore({
 			} catch (error) {
 				console.error(error);
 				if (isApiErrorResponse(error)) {
-					console.log("askdjskdjk");
 					set({ buildError: error });
 				}
 			} finally {

@@ -200,6 +200,20 @@ function BuildArgRow({
 		setIsEditing(false);
 	}, [argName, arg, onFinish]);
 
+	const onArgNameChange = useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			setArgName(event.currentTarget.value);
+		},
+		[],
+	);
+
+	const onArgChange = useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			setArg(event.currentTarget.value);
+		},
+		[],
+	);
+
 	return (
 		<>
 			<Input
@@ -207,18 +221,14 @@ function BuildArgRow({
 				disabled={!isEditing}
 				placeholder="Argument name"
 				value={argName}
-				onChange={(event) => {
-					setArgName(event.currentTarget.value);
-				}}
+				onChange={onArgNameChange}
 			/>
 			<Input
 				type="text"
 				disabled={!isEditing}
 				placeholder="Argument value"
 				value={arg}
-				onChange={(event) => {
-					setArg(event.currentTarget.value);
-				}}
+				onChange={onArgChange}
 			/>
 			<div className="flex flex-row">
 				{isEditing ? (
