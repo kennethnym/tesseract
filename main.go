@@ -103,5 +103,5 @@ func main() {
 		_ = c.NoContent(http.StatusInternalServerError)
 	}
 
-	apiServer.Logger.Fatal(apiServer.Start(":8080"))
+	apiServer.Logger.Fatal(apiServer.Start(fmt.Sprintf(":%d", config.Port)))
 }

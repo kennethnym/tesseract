@@ -7,11 +7,14 @@ import (
 )
 
 type Config struct {
+	Port                  int    `json:"port"`
 	DatabasePath          string `json:"databasePath"`
 	TemplateDirectoryPath string `json:"templateDirectoryPath"`
 	HostKeyDirectoryPath  string `json:"hostKeyDirectoryPath"`
 	HostName              string `json:"hostName"`
 }
+
+const defaultPort = 8080
 
 func ReadConfigFrom(reader io.Reader) (Config, error) {
 	var config Config
@@ -33,6 +36,10 @@ func ReadConfigFrom(reader io.Reader) (Config, error) {
 	config.HostKeyDirectoryPath, err = filepath.Abs(config.HostKeyDirectoryPath)
 	if err != nil {
 		return Config{}, err
+	}
+
+	if config.Port == 0 {
+		config.Port = defaultPort
 	}
 
 	return config, nil
