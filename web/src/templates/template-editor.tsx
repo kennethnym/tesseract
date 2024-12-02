@@ -1,4 +1,4 @@
-import { ApiError } from "@/api";
+import { API_ERROR_BAD_TEMPLATE, ApiError } from "@/api";
 import { CodeMirrorEditor } from "@/components/codemirror-editor";
 import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
@@ -35,7 +35,7 @@ import {
 } from "./template-editor-store";
 import type { Template } from "./types";
 import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/toaster";
 
 function TemplateEditor() {
 	const { templateName, _splat } = templateEditorRoute.useParams();
@@ -122,6 +122,8 @@ function _TemplateEditor({
 						<TemplateBuildOutputPanel />
 					</main>
 				</div>
+				<Toaster />
+				<BuildErrorToast />
 			</SidebarProvider>
 		</TemplateEditorStoreContext.Provider>
 	);
@@ -330,6 +332,35 @@ function BuildOutput() {
 			{buildOutput}
 		</pre>
 	);
+}
+
+function BuildErrorToast() {
+	const buildError = useTemplateEditorStore((state) => state.buildError);
+	const { toast } = useToast();
+
+	useEffect(() => {
+		if (!buildError) return;
+
+		switch (buildError.code) {
+			case API_ERROR_BAD_TEMPLATE:
+				toast({
+					variant: "destructive",
+					title: "Invalid template",
+					description: buildError.error,
+				});
+				break;
+
+			default:
+				toast({
+					variant: "destructive",
+					title: "Unexpected error",
+					description: buildError.error,
+				});
+				break;
+		}
+	}, [buildError, toast]);
+
+	return false;
 }
 
 export { TemplateEditor };

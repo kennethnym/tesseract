@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"tesseract/internal/apierror"
 	"tesseract/internal/migration"
 	"tesseract/internal/service"
 	"tesseract/internal/template"
@@ -86,10 +87,20 @@ func main() {
 				c.Logger().Error(err)
 				_ = c.NoContent(http.StatusInternalServerError)
 			}
-		} else {
-			c.Logger().Error(err)
-			_ = c.NoContent(http.StatusInternalServerError)
+			return
 		}
+
+		var apiErr *apierror.APIError
+		if errors.As(err, &apiErr) {
+			if err = c.JSON(apiErr.StatusCode, apiErr); err != nil {
+				c.Logger().Error(err)
+				_ = c.NoContent(http.StatusInternalServerError)
+			}
+			return
+		}
+
+		c.Logger().Error(err)
+		_ = c.NoContent(http.StatusInternalServerError)
 	}
 
 	apiServer.Logger.Fatal(apiServer.Start(":8080"))

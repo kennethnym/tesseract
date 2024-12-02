@@ -11,8 +11,10 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"strings"
 	"time"
 )
 
@@ -252,6 +254,14 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 		BuildArgs: opts.buildArgs,
 	})
 	if err != nil {
+		if errdefs.IsInvalidParameter(err) {
+			return nil, &errBadTemplate{
+				// the docker sdk returns an error message that looks like:
+				// "Error response from daemon: dockerfile parse error on line 1: unknown instruction: FR (did you mean FROM?)"
+				// we don't want the "error response..." part because it is meaningless
+				message: strings.Replace(err.Error(), "Error response from daemon: ", "", 1),
+			}
+		}
 		return nil, err
 	}
 

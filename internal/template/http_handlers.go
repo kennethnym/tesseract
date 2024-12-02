@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
+	"tesseract/internal/apierror"
 	"tesseract/internal/service"
 )
 
@@ -136,6 +137,10 @@ func buildTemplate(c echo.Context, body postTemplateRequestBody) error {
 		buildArgs: body.BuildArgs,
 	})
 	if err != nil {
+		var errBadTemplate *errBadTemplate
+		if errors.As(err, &errBadTemplate) {
+			return apierror.New(http.StatusBadRequest, "BAD_TEMPLATE", errBadTemplate.message)
+		}
 		return err
 	}
 

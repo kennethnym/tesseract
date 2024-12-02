@@ -144,6 +144,10 @@ async function buildTemplate({
 			Accept: "text/event-stream",
 		},
 	});
+	if (res.status !== 200) {
+		const errBody = await res.json();
+		throw errBody;
+	}
 	const stream = res.body?.pipeThrough(new TextDecoderStream()).getReader();
 	if (stream) {
 		while (true) {

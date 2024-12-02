@@ -2,6 +2,7 @@ import { createStore, useStore } from "zustand";
 import type { Template } from "./types";
 import { createContext, useContext } from "react";
 import { buildTemplate } from "./api";
+import { isApiErrorResponse, type ApiErrorResponse } from "@/api";
 
 interface TemplateEditorState {
 	template: Template;
@@ -9,6 +10,7 @@ interface TemplateEditorState {
 	isBuildInProgress: boolean;
 	isBuildOutputVisible: boolean;
 	buildOutput: string;
+	buildError: ApiErrorResponse | null;
 
 	startBuild: ({
 		imageTag,
@@ -34,6 +36,7 @@ function createTemplateEditorStore({
 		isBuildInProgress: false,
 		isBuildOutputVisible: false,
 		buildOutput: "",
+		buildError: null,
 
 		startBuild: async ({ imageTag, buildArgs }) => {
 			const state = get();
@@ -42,6 +45,7 @@ function createTemplateEditorStore({
 				isBuildInProgress: true,
 				isBuildOutputVisible: true,
 				buildOutput: "",
+				buildError: null,
 			});
 
 			try {
@@ -51,8 +55,12 @@ function createTemplateEditorStore({
 					templateName: state.template.name,
 					onBuildOutput: state.addBuildOutputChunk,
 				});
-			} catch {
-				// TODO: handle build error
+			} catch (error) {
+				console.error(error);
+				if (isApiErrorResponse(error)) {
+					console.log("askdjskdjk");
+					set({ buildError: error });
+				}
 			} finally {
 				set({ isBuildInProgress: false });
 			}
