@@ -53,7 +53,8 @@ function SshTab() {
 			<pre>{workspace.sshPort}</pre>
 			<p className="text-sm text-muted-foreground mt-4">Command</p>
 			<pre>
-				ssh -p {workspace.sshPort} testuser@{import.meta.env.VITE_HOST_NAME}
+				ssh -p {workspace.sshPort} testuser@
+				{import.meta.env.VITE_HOST_NAME || window.location.hostname}
 			</pre>
 		</TabContainer>
 	);
