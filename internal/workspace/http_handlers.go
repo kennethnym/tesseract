@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"tesseract/internal/apierror"
 )
 
 type createWorkspaceRequestBody struct {
@@ -86,6 +87,12 @@ func createWorkspace(c echo.Context, workspaceName string) error {
 		if errors.Is(err, errImageNotFound) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("no image with id %v exists", body.ImageID))
 		}
+
+		var errWorkspaceExists *errWorkspaceExists
+		if errors.As(err, &errWorkspaceExists) {
+			return apierror.New(http.StatusBadRequest, "WORKSPACE_EXISTS", errWorkspaceExists.message)
+		}
+
 		return err
 	}
 

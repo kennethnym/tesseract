@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
@@ -174,6 +175,11 @@ func (mgr workspaceManager) createWorkspace(ctx context.Context, opts createWork
 
 	res, err := mgr.dockerClient.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, opts.name)
 	if err != nil {
+		if errdefs.IsConflict(err) {
+			return nil, &errWorkspaceExists{
+				message: docker.CleanErrorMessage(err.Error()),
+			}
+		}
 		return nil, err
 	}
 

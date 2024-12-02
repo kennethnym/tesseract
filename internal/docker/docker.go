@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 	"strconv"
+	"strings"
 )
 
 // ContainerSSHHostPort returns the port on the host that is exposing the internal ssh port of the given container info
@@ -32,4 +33,9 @@ func ContainerHostPort(ctx context.Context, container types.ContainerJSON, port 
 		return -1
 	}
 	return port
+}
+
+// CleanErrorMessage removes unnecessary parts in a docker sdk error message, such as "Error response from daemon:"
+func CleanErrorMessage(msg string) string {
+	return strings.Replace(msg, "Error response from daemon: ", "", 1)
 }

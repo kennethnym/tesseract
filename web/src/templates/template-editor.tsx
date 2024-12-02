@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { useTemplate, useTemplateFile, useUpdateTemplateFile } from "./api";
 import { templateEditorRoute } from "./routes";

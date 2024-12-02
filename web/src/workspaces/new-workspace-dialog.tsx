@@ -30,6 +30,7 @@ import { nonempty, object, pattern, string, type Infer } from "superstruct";
 import { useCreateWorkspace, useWorkspaceRuntimes } from "./api";
 import type { TemplateImage } from "@/templates/types";
 import type { WorkspaceRuntime } from "./types";
+import { API_ERROR_WORKSPACE_EXISTS, isApiErrorResponse } from "@/api";
 
 interface NewWorkspaceDialogProps {
 	onCreateSuccess: () => void;
@@ -131,28 +132,47 @@ function NewWorkspaceForm({
 	useEffect(() => {
 		switch (status.type) {
 			case "error":
-				toast({
-					variant: "destructive",
-					title: "Failed to create the workspace.",
-					action: (
-						<ToastAction
-							onClick={() => {
-								formRef.current?.requestSubmit();
-							}}
-							altText="Try again"
-						>
-							Try again
-						</ToastAction>
-					),
-				});
+				if (isApiErrorResponse(status.error)) {
+					let toastTitle = "";
+					switch (status.error.code) {
+						case API_ERROR_WORKSPACE_EXISTS:
+							toastTitle = "Workspace already exists.";
+							break;
+						default:
+							toastTitle = "Failed to create the workspace.";
+							break;
+					}
+					toast({
+						variant: "destructive",
+						title: toastTitle,
+						description: status.error.error,
+					});
+				} else {
+					toast({
+						variant: "destructive",
+						title: "Failed to create the workspace.",
+						description: "Unknown error",
+						action: (
+							<ToastAction
+								onClick={() => {
+									formRef.current?.requestSubmit();
+								}}
+								altText="Try again"
+							>
+								Try again
+							</ToastAction>
+						),
+					});
+				}
 				break;
+
 			case "ok":
 				onCreateSuccess();
 				break;
 			default:
 				break;
 		}
-	}, [status.type, toast, onCreateSuccess]);
+	}, [status, toast, onCreateSuccess]);
 
 	async function onSubmit(values: Infer<typeof NewWorkspaceFormSchema>) {
 		await createWorkspace({

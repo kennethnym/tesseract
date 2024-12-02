@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/errdefs"
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
-	"strings"
+	"tesseract/internal/docker"
 	"time"
 )
 
@@ -259,7 +259,7 @@ func (mgr *templateManager) buildTemplate(ctx context.Context, template *templat
 				// the docker sdk returns an error message that looks like:
 				// "Error response from daemon: dockerfile parse error on line 1: unknown instruction: FR (did you mean FROM?)"
 				// we don't want the "error response..." part because it is meaningless
-				message: strings.Replace(err.Error(), "Error response from daemon: ", "", 1),
+				message: docker.CleanErrorMessage(err.Error()),
 			}
 		}
 		return nil, err

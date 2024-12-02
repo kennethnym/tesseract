@@ -6,6 +6,7 @@ interface ApiErrorResponse {
 }
 
 const API_ERROR_BAD_TEMPLATE = "BAD_TEMPLATE";
+const API_ERROR_WORKSPACE_EXISTS = "WORKSPACE_EXISTS";
 
 enum ApiError {
 	NotFound = "NOT_FOUND",
@@ -45,5 +46,11 @@ function isApiErrorResponse(error: unknown): error is ApiErrorResponse {
 	);
 }
 
-export { API_ERROR_BAD_TEMPLATE, ApiError, fetchApi, isApiErrorResponse };
+export {
+	API_ERROR_BAD_TEMPLATE,
+	API_ERROR_WORKSPACE_EXISTS,
+	ApiError,
+	fetchApi,
+	isApiErrorResponse,
+};
 export type { ApiErrorResponse };
