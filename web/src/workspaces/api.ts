@@ -1,7 +1,7 @@
 import { fetchApi, type ApiError } from "@/api";
 import type { QueryStatus } from "@/lib/query";
 import { useCallback, useState } from "react";
-import useSWR, { useSWRConfig } from "swr";
+import useSWR, { mutate, useSWRConfig } from "swr";
 import {
 	type Workspace,
 	type WorkspacePortMapping,
@@ -200,6 +200,46 @@ function useAddWorkspacePort() {
 	return { addWorkspacePort, status };
 }
 
+function useDeleteWorkspacePort() {
+	const [status, setStatus] = useState<QueryStatus<ApiError>>({ type: "idle" });
+
+	const deleteWorkspacePort = useCallback(
+		async (workspaceName: string, portName: string) => {
+			setStatus({ type: "loading" });
+			try {
+				await mutate(
+					"/workspaces",
+					fetchApi(`/workspaces/${workspaceName}/forwarded-ports/${portName}`, {
+						method: "DELETE",
+					}),
+					{
+						populateCache: (_, workspaces) =>
+							workspaces.map(
+								(it: Workspace): Workspace =>
+									it.name === workspaceName
+										? {
+												...it,
+												ports: it.ports?.filter(
+													(port) => port.subdomain !== portName,
+												),
+											}
+										: it,
+							),
+						revalidate: false,
+						throwOnError: true,
+					},
+				);
+				setStatus({ type: "ok" });
+			} catch (error: unknown) {
+				setStatus({ type: "error", error: error as ApiError });
+			}
+		},
+		[],
+	);
+
+	return { deleteWorkspacePort, status };
+}
+
 function useWorkspaceRuntimes() {
 	return useSWR(
 		"/workspace-runtimes",
@@ -215,4 +255,5 @@ export {
 	useDeleteWorkspace,
 	useAddWorkspacePort,
 	useWorkspaceRuntimes,
+	useDeleteWorkspacePort,
 };

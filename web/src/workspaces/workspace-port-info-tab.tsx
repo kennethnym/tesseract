@@ -10,13 +10,14 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 import { superstructResolver } from "@hookform/resolvers/superstruct";
 import { Check, Trash2, X } from "lucide-react";
-import { useContext, useId } from "react";
+import { useContext, useEffect, useId } from "react";
 import { useForm } from "react-hook-form";
 import { type Infer, number, object, pattern, size, string } from "superstruct";
 import { create } from "zustand";
-import { useAddWorkspacePort } from "./api";
+import { useAddWorkspacePort, useDeleteWorkspacePort } from "./api";
 import { WorkspaceTableRowContext } from "./workspace-table";
 
 interface PortInfoTabStore {
@@ -57,7 +58,7 @@ function PortInfoTableBody() {
 					<TableCell className="py-0">{subdomain}</TableCell>
 					<TableCell className="py-0">{port}</TableCell>
 					<TableCell className="p-0 text-right">
-						<DeletePortMappingButton />
+						<DeletePortMappingButton subdomain={subdomain} />
 					</TableCell>
 				</TableRow>
 			))}
@@ -183,10 +184,34 @@ function NewPortMappingRow() {
 	);
 }
 
-function DeletePortMappingButton() {
+function DeletePortMappingButton({ subdomain }: { subdomain: string }) {
+	const { deleteWorkspacePort, status } = useDeleteWorkspacePort();
+	const { toast } = useToast();
+	const workspace = useContext(WorkspaceTableRowContext);
+	const isDeleting = status.type === "loading";
+
+	useEffect(() => {
+		if (status.type === "error") {
+			toast({
+				variant: "destructive",
+				title: "Failed to delete port.",
+				description: "Unexpected error.",
+			});
+		}
+	}, [status.type, toast]);
+
+	async function _deleteWorkspacePort() {
+		await deleteWorkspacePort(workspace.name, subdomain);
+	}
+
 	return (
-		<Button variant="ghost" size="icon">
-			<Trash2 />
+		<Button
+			disabled={isDeleting}
+			variant="ghost"
+			size="icon"
+			onClick={_deleteWorkspacePort}
+		>
+			{isDeleting ? <LoadingSpinner /> : <Trash2 />}
 		</Button>
 	);
 }
