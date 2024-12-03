@@ -38,7 +38,7 @@ interface NewWorkspaceDialogProps {
 
 const NewWorkspaceFormSchema = object({
 	workspaceName: pattern(string(), /^[\w-]+$/),
-	imageId: nonempty(string()),
+	image: nonempty(string()),
 	runtime: nonempty(string()),
 });
 
@@ -121,7 +121,9 @@ function NewWorkspaceForm({
 		resolver: superstructResolver(NewWorkspaceFormSchema),
 		defaultValues: {
 			workspaceName: "",
-			imageId: "",
+			// image is in the form "imageTag imageId" (space as separator)
+			// this is to prevent two image tags pointing to the same image id
+			image: "",
 			runtime: "",
 		},
 	});
@@ -177,7 +179,7 @@ function NewWorkspaceForm({
 	async function onSubmit(values: Infer<typeof NewWorkspaceFormSchema>) {
 		await createWorkspace({
 			workspaceName: values.workspaceName,
-			imageId: values.imageId,
+			imageId: values.image.split(" ")[1],
 			runtime: values.runtime,
 		});
 	}
@@ -208,7 +210,7 @@ function NewWorkspaceForm({
 
 				<FormField
 					control={form.control}
-					name="imageId"
+					name="image"
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Image for this workspace</FormLabel>
@@ -220,7 +222,10 @@ function NewWorkspaceForm({
 								</FormControl>
 								<SelectContent>
 									{templateImages.map((image) => (
-										<SelectItem key={image.imageId} value={image.imageId}>
+										<SelectItem
+											key={image.imageTag}
+											value={`${image.imageTag} ${image.imageId}`}
+										>
 											{image.imageTag}
 										</SelectItem>
 									))}
