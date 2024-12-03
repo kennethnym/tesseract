@@ -1,4 +1,4 @@
-import { API_ERROR_WORKSPACE_EXISTS, isApiErrorResponse } from "@/api";
+import { API_ERROR_WORKSPACE_EXISTS } from "@/api";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
@@ -21,7 +21,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { useTemplateImages } from "@/templates/api";
 import type { TemplateImage } from "@/templates/types";
@@ -136,36 +135,24 @@ function NewWorkspaceForm({
 	useEffect(() => {
 		switch (status.type) {
 			case "error":
-				if (isApiErrorResponse(status.error)) {
-					let toastTitle = "";
-					switch (status.error.code) {
-						case API_ERROR_WORKSPACE_EXISTS:
-							toastTitle = "Workspace already exists.";
-							break;
-						default:
-							toastTitle = "Failed to create the workspace.";
-							break;
+				{
+					let toastTitle: string;
+					let toastDescription: string;
+					if (
+						status.error.type === "BAD_REQUEST" &&
+						status.error.details.code === API_ERROR_WORKSPACE_EXISTS
+					) {
+						toastTitle = "Workspace already exists.";
+						toastDescription = status.error.details.error;
+					} else {
+						toastTitle = "Failed to create the workspace.";
+						toastDescription = "Unknown error";
 					}
+
 					toast({
 						variant: "destructive",
 						title: toastTitle,
-						description: status.error.error,
-					});
-				} else {
-					toast({
-						variant: "destructive",
-						title: "Failed to create the workspace.",
-						description: "Unknown error",
-						action: (
-							<ToastAction
-								onClick={() => {
-									formRef.current?.requestSubmit();
-								}}
-								altText="Try again"
-							>
-								Try again
-							</ToastAction>
-						),
+						description: toastDescription,
 					});
 				}
 				break;

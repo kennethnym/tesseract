@@ -1,4 +1,4 @@
-import { fetchApi } from "@/api";
+import { fetchApi, type ApiError } from "@/api";
 import type { QueryStatus } from "@/lib/query";
 import { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
@@ -24,7 +24,7 @@ function useWorkspaces() {
 }
 
 function useCreateWorkspace() {
-	const [status, setStatus] = useState<QueryStatus>({ type: "idle" });
+	const [status, setStatus] = useState<QueryStatus<ApiError>>({ type: "idle" });
 	const { mutate } = useSWRConfig();
 
 	const createWorkspace = useCallback(
