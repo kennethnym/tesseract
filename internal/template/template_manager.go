@@ -41,6 +41,7 @@ type buildTemplateOptions struct {
 }
 
 var errTemplateNotFound = errors.New("template not found")
+var errTemplateExists = errors.New("template already exists")
 var errBaseTemplateNotFound = errors.New("base template not found")
 var errTemplateFileNotFound = errors.New("template file not found")
 

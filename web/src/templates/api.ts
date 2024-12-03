@@ -6,7 +6,8 @@ import type {
 	TemplateImage,
 	BaseTemplate,
 } from "./types";
-import { fetchApi } from "@/api";
+import { ApiError, fetchApi } from "@/api";
+import { promiseOrThrow } from "@/lib/errors";
 
 function useTemplates() {
 	return useSWR(
@@ -17,7 +18,7 @@ function useTemplates() {
 }
 
 function useTemplate(name: string) {
-	return useSWR(
+	return useSWR<Template, ApiError>(
 		["/templates", name],
 		async (): Promise<Template> =>
 			fetchApi(`/templates/${name}`).then((res) => res.json()),
@@ -45,7 +46,7 @@ function useDeleteTemplate() {
 
 function useCreateTemplate() {
 	const [isCreating, setIsCreating] = useState(false);
-	const [error, setError] = useState<unknown | null>(null);
+	const [error, setError] = useState<ApiError | null>(null);
 	const { mutate } = useSWRConfig();
 
 	const createTemplate = useCallback(
@@ -60,14 +61,17 @@ function useCreateTemplate() {
 		}): Promise<Template | null> => {
 			try {
 				const res = await fetchApi(`/templates/${name}`, {
-					method: "POST",
+					method: "PUT",
 					body: JSON.stringify({ description, baseTemplate }),
 					headers: {
 						"Content-Type": "application/json",
 					},
 				});
 
-				const template: Template = await res.json();
+				const template = await promiseOrThrow<Template, ApiError>(
+					res.json(),
+					() => ({ type: "INTERNAL" }),
+				);
 				mutate(["/templates", name], template, {
 					populateCache: (newTemplate) => newTemplate,
 					revalidate: false,
@@ -75,7 +79,7 @@ function useCreateTemplate() {
 
 				return template;
 			} catch (err: unknown) {
-				setError(err);
+				setError(err as ApiError);
 				return null;
 			} finally {
 				setIsCreating(false);
@@ -88,10 +92,12 @@ function useCreateTemplate() {
 }
 
 function useTemplateFile(templateName: string, filePath: string) {
-	return useSWR(filePath ? ["/templates", templateName, filePath] : null, () =>
-		fetchApi(`/templates/${templateName}/${filePath}`).then((res) =>
-			res.text(),
-		),
+	return useSWR<string, ApiError>(
+		filePath ? ["/templates", templateName, filePath] : null,
+		() =>
+			fetchApi(`/templates/${templateName}/${filePath}`).then((res) =>
+				res.text(),
+			),
 	);
 }
 

@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { BaseTemplate } from "./types";
+import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const NewTemplateForm = object({
 	baseTemplate: nonempty(string()),
@@ -75,7 +77,8 @@ function TemplateFormContainer() {
 
 function TemplateForm({ baseTemplates }: { baseTemplates: BaseTemplate[] }) {
 	const router = useRouter();
-	const { createTemplate, isCreatingTemplate } = useCreateTemplate();
+	const { createTemplate, isCreatingTemplate, error } = useCreateTemplate();
+	const { toast } = useToast();
 	const form = useForm({
 		resolver: superstructResolver(NewTemplateForm),
 		disabled: isCreatingTemplate,
@@ -85,6 +88,36 @@ function TemplateForm({ baseTemplates }: { baseTemplates: BaseTemplate[] }) {
 			templateDescription: "",
 		},
 	});
+
+	useEffect(() => {
+		if (!error) return;
+
+		switch (error.type) {
+			case "CONFLICT":
+				toast({
+					variant: "destructive",
+					title: "Template already exists",
+					description: "Please use another name for the template",
+				});
+				break;
+
+			case "NETWORK":
+				toast({
+					variant: "destructive",
+					title: "Failed to create the template",
+					description: "Network error",
+				});
+				break;
+
+			default:
+				toast({
+					variant: "destructive",
+					title: "Failed to create the template",
+					description: "Unknown error",
+				});
+				break;
+		}
+	}, [error, toast]);
 
 	async function onSubmit(values: Infer<typeof NewTemplateForm>) {
 		const createdTemplate = await createTemplate({

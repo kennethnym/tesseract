@@ -1,4 +1,4 @@
-import { API_ERROR_BAD_TEMPLATE, ApiError } from "@/api";
+import { API_ERROR_BAD_TEMPLATE } from "@/api";
 import { CodeMirrorEditor } from "@/components/codemirror-editor";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -12,6 +12,8 @@ import {
 	SidebarMenuItem,
 	SidebarProvider,
 } from "@/components/ui/sidebar.tsx";
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
@@ -25,10 +27,8 @@ import {
 	createTemplateEditorStore,
 	useTemplateEditorStore,
 } from "./template-editor-store";
-import type { Template } from "./types";
-import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster";
 import { TemplateEditorTopBar } from "./template-editor-top-bar";
+import type { Template } from "./types";
 
 function TemplateEditor() {
 	const { templateName, _splat } = templateEditorRoute.useParams();
@@ -43,13 +43,13 @@ function TemplateEditor() {
 	}
 
 	if (error || !template) {
-		if (error === ApiError.NotFound) {
+		if (error?.type === "NOT_FOUND") {
 			return <TemplateNotFound />;
 		}
 
 		let message = "";
-		switch (error) {
-			case ApiError.Network:
+		switch (error?.type) {
+			case "NETWORK":
 				message = "Having trouble contacting the server.";
 				break;
 			default:
@@ -178,11 +178,11 @@ function Editor() {
 
 	if (error || fileContent === undefined) {
 		let message = "";
-		switch (error) {
-			case ApiError.NotFound:
+		switch (error?.type) {
+			case "NOT_FOUND":
 				message = "This file does not exist in the template.";
 				break;
-			case ApiError.Network:
+			case "NETWORK":
 				message = "Having trouble contacting the server.";
 				break;
 			default:

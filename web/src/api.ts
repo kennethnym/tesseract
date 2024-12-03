@@ -1,6 +1,6 @@
 import { promiseOrThrow } from "./lib/errors";
 
-interface ApiErrorResponse {
+interface ApiErrorDetails {
 	code: string;
 	error: string;
 }
@@ -8,12 +8,13 @@ interface ApiErrorResponse {
 const API_ERROR_BAD_TEMPLATE = "BAD_TEMPLATE";
 const API_ERROR_WORKSPACE_EXISTS = "WORKSPACE_EXISTS";
 
-enum ApiError {
-	NotFound = "NOT_FOUND",
-	BadRequest = "BAD_REQUEST",
-	Internal = "INTERNAL",
-	Network = "NETWORK",
-}
+type ApiError =
+	| { type: "NOT_FOUND" }
+	| { type: "NETWORK" }
+	| { type: "BAD_REQUEST" }
+	| { type: "CONFLICT" }
+	| { type: "INTERNAL" }
+	| { type: "BAD_REQUEST"; details: ApiErrorDetails };
 
 async function fetchApi(
 	url: URL | RequestInfo,
@@ -21,22 +22,27 @@ async function fetchApi(
 ): Promise<Response> {
 	const res = await promiseOrThrow(
 		fetch(`${import.meta.env.VITE_API_URL}/api${url}`, init),
-		() => ApiError.Network,
+		() => ({ type: "NETWORK" }),
 	);
 	if (res.status !== 200) {
 		switch (res.status) {
 			case 400:
-				throw await res.json();
+				throw {
+					type: "BAD_REQUEST",
+					details: await res.json(),
+				};
 			case 404:
-				throw ApiError.NotFound;
+				throw { type: "NOT_FOUND" };
+			case 409:
+				throw { type: "CONFLICT" };
 			default:
-				throw ApiError.Internal;
+				throw { type: "INTERNAL" };
 		}
 	}
 	return res;
 }
 
-function isApiErrorResponse(error: unknown): error is ApiErrorResponse {
+function isApiErrorResponse(error: unknown): error is ApiErrorDetails {
 	return (
 		error !== null &&
 		error !== undefined &&
@@ -49,8 +55,7 @@ function isApiErrorResponse(error: unknown): error is ApiErrorResponse {
 export {
 	API_ERROR_BAD_TEMPLATE,
 	API_ERROR_WORKSPACE_EXISTS,
-	ApiError,
 	fetchApi,
 	isApiErrorResponse,
 };
-export type { ApiErrorResponse };
+export type { ApiError, ApiErrorDetails };

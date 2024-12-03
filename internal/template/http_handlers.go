@@ -56,36 +56,21 @@ func fetchTemplate(c echo.Context) error {
 	return c.JSON(http.StatusOK, template)
 }
 
-func createOrUpdateTemplate(c echo.Context) error {
-	mgr := templateManagerFrom(c)
-	exists, err := mgr.hasTemplate(c.Request().Context(), c.Param("templateName"))
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return createTemplate(c)
-	}
-
-	var body postTemplateRequestBody
-	err = json.NewDecoder(c.Request().Body).Decode(&body)
-	if err != nil {
-		return err
-	}
-
-	if body.ImageTag != nil || body.BuildArgs != nil {
-		return buildTemplate(c, body)
-	}
-
-	return updateTemplate(c, body)
-}
-
 func createTemplate(c echo.Context) error {
-	mgr := templateManagerFrom(c)
 	name := c.Param("templateName")
+	mgr := templateManagerFrom(c)
+
+	exists, err := mgr.hasTemplate(c.Request().Context(), name)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return echo.NewHTTPError(http.StatusConflict)
+	}
 
 	var body createTemplateRequestBody
-	err := json.NewDecoder(c.Request().Body).Decode(&body)
-	if err != nil {
+	if err = json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
 		return err
 	}
 
@@ -99,6 +84,29 @@ func createTemplate(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, createdTemplate)
+}
+
+func updateOrBuildTemplate(c echo.Context) error {
+	mgr := templateManagerFrom(c)
+	exists, err := mgr.hasTemplate(c.Request().Context(), c.Param("templateName"))
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return echo.NewHTTPError(http.StatusNotFound)
+	}
+
+	var body postTemplateRequestBody
+	err = json.NewDecoder(c.Request().Body).Decode(&body)
+	if err != nil {
+		return err
+	}
+
+	if body.ImageTag != nil || body.BuildArgs != nil {
+		return buildTemplate(c, body)
+	}
+
+	return updateTemplate(c, body)
 }
 
 func updateTemplate(c echo.Context, body postTemplateRequestBody) error {
