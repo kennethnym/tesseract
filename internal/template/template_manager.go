@@ -152,11 +152,15 @@ func (mgr *templateManager) createTemplate(ctx context.Context, opts createTempl
 		return nil, err
 	}
 
-	if err = tx.NewInsert().Model(&files).Scan(ctx); err != nil {
+	if _, err = tx.NewInsert().Model(&files).Exec(ctx); err != nil {
 		return nil, err
 	}
 
 	t.Files = files
+	t.FileMap = make(map[string]*templateFile, len(files))
+	for _, f := range t.Files {
+		t.FileMap[f.FilePath] = f
+	}
 
 	if err = tx.Commit(); err != nil {
 		_ = tx.Rollback()
@@ -347,7 +351,7 @@ func (mgr *templateManager) deleteTemplate(ctx context.Context, name string) err
 	}
 
 	res, err := tx.NewDelete().Table("templates").
-		Where("Name = ?", name).
+		Where("name = ?", name).
 		Exec(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
