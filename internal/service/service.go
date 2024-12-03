@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/docker/docker/client"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/labstack/echo/v4"
@@ -63,7 +64,7 @@ func Initialize(config Config) (Services, error) {
 		return Services{}, err
 	}
 
-	db, err := sql.Open(sqliteshim.ShimName, config.DatabasePath)
+	db, err := sql.Open(sqliteshim.ShimName, fmt.Sprintf("%s?_pragma=foreign_keys(1)", config.DatabasePath))
 	if err != nil {
 		return Services{}, err
 	}
