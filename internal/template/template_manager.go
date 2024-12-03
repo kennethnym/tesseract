@@ -30,7 +30,12 @@ type createTemplateOptions struct {
 }
 
 type updateTemplateOptions struct {
-	tx          *bun.Tx
+	tx *bun.Tx
+
+	// name is the new name for the template
+	name string
+
+	// description is the new description for the template
 	description string
 }
 
@@ -183,10 +188,29 @@ func (mgr *templateManager) updateTemplate(ctx context.Context, name string, opt
 		tx = &_tx
 	}
 
+	if opts.name != "" {
+		exists, err := tx.NewSelect().
+			Table("templates").
+			Where("name = ?", opts.name).
+			Exists(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, errTemplateExists
+		}
+	}
+
 	var template template
-	err := tx.NewUpdate().Model(&template).
-		Where("Name = ?", name).
-		Set("description = ?", opts.description).
+	q := tx.NewUpdate().Model(&template).Where("name = ?", name)
+	if opts.name != "" {
+		q = q.Set("name = ?", opts.name)
+	}
+	if opts.description != "" {
+		q = q.Set("description = ?", opts.description)
+	}
+
+	err := q.
 		Returning("*").
 		Scan(ctx)
 	if err != nil {

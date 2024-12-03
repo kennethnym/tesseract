@@ -20,7 +20,7 @@ type template struct {
 	IsBuilt        bool      `json:"isBuilt"`
 
 	Files   []*templateFile          `bun:"rel:has-many,join:id=template_id" json:"-"`
-	FileMap map[string]*templateFile `bun:"-" json:"files"`
+	FileMap map[string]*templateFile `bun:"-" json:"files,omitempty"`
 }
 
 type templateFile struct {

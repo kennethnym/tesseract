@@ -11,7 +11,6 @@ const API_ERROR_WORKSPACE_EXISTS = "WORKSPACE_EXISTS";
 type ApiError =
 	| { type: "NOT_FOUND" }
 	| { type: "NETWORK" }
-	| { type: "BAD_REQUEST" }
 	| { type: "CONFLICT" }
 	| { type: "INTERNAL" }
 	| { type: "BAD_REQUEST"; details: ApiErrorDetails };

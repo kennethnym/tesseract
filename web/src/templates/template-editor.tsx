@@ -1,26 +1,17 @@
 import { API_ERROR_BAD_TEMPLATE } from "@/api";
 import { CodeMirrorEditor } from "@/components/codemirror-editor";
 import { Button } from "@/components/ui/button.tsx";
-import {
-	Sidebar,
-	SidebarContent,
-	SidebarGroup,
-	SidebarGroupLabel,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	SidebarProvider,
-} from "@/components/ui/sidebar.tsx";
+import { SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { useTemplate, useTemplateFile, useUpdateTemplateFile } from "./api";
 import { templateEditorRoute } from "./routes";
+import { TemplateEditorSidebar } from "./template-editor-sidebar";
 import {
 	type TemplateEditorStore,
 	TemplateEditorStoreContext,
@@ -111,7 +102,7 @@ function _TemplateEditor({
 	return (
 		<TemplateEditorStoreContext.Provider value={store.current}>
 			<SidebarProvider>
-				<EditorSidebar />
+				<TemplateEditorSidebar />
 				<div className="flex flex-col w-full min-w-0">
 					<TemplateEditorTopBar />
 					<main className="w-full h-full flex flex-col">
@@ -213,53 +204,6 @@ function Editor() {
 			onValueChanged={onValueChanged}
 			vimMode={isVimModeEnabled}
 		/>
-	);
-}
-
-function EditorSidebar() {
-	const templateName = useTemplateEditorStore((state) => state.template.name);
-	return (
-		<Sidebar>
-			<SidebarHeader>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton asChild className="opacity-80">
-							<Link to="/templates" className="text-xs">
-								<ArrowLeft /> All templates
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
-				<p className="px-2 font-semibold">{templateName}</p>
-			</SidebarHeader>
-			<SidebarContent>
-				<SidebarGroup>
-					<SidebarGroupLabel>Files</SidebarGroupLabel>
-					<EditorSidebarFileTree />
-				</SidebarGroup>
-			</SidebarContent>
-		</Sidebar>
-	);
-}
-
-function EditorSidebarFileTree() {
-	const template = useTemplateEditorStore((state) => state.template);
-	const currentFilePath = useTemplateEditorStore(
-		(state) => state.currentFilePath,
-	);
-
-	return (
-		<SidebarMenu>
-			{Object.values(template.files).map((file) => (
-				<SidebarMenuItem key={file.path}>
-					<SidebarMenuButton isActive={currentFilePath === file.path} asChild>
-						<Link to={`/templates/${template.name}/${file.path}`}>
-							{file.path}
-						</Link>
-					</SidebarMenuButton>
-				</SidebarMenuItem>
-			))}
-		</SidebarMenu>
 	);
 }
 

@@ -2,7 +2,7 @@ import { type ApiErrorDetails, isApiErrorResponse } from "@/api";
 import { createContext, useContext } from "react";
 import { createStore, useStore } from "zustand";
 import { buildTemplate } from "./api";
-import type { Template } from "./types";
+import type { Template, TemplateMeta } from "./types";
 
 interface TemplateEditorState {
 	template: Template;
@@ -25,6 +25,8 @@ interface TemplateEditorState {
 	toggleBuildOutput: () => void;
 
 	setIsVimModeEnabled: (enabled: boolean) => void;
+
+	updateTemplateMetadata: (templateMetadata: TemplateMeta) => void;
 }
 
 type TemplateEditorStore = ReturnType<typeof createTemplateEditorStore>;
@@ -86,6 +88,12 @@ function createTemplateEditorStore({
 
 		setIsVimModeEnabled: (enabled: boolean) =>
 			set({ isVimModeEnabled: enabled }),
+
+		updateTemplateMetadata: (templateMetadata) =>
+			set((state) => ({
+				...state,
+				template: { ...state.template, ...templateMetadata },
+			})),
 	}));
 }
 

@@ -8,6 +8,7 @@ import type {
 	TemplateImage,
 	TemplateMeta,
 } from "./types";
+import { QueryStatus } from "@/lib/query";
 
 function useTemplates() {
 	return useSWR(
@@ -91,6 +92,64 @@ function useCreateTemplate() {
 	);
 
 	return { createTemplate, isCreatingTemplate: isCreating, error };
+}
+
+function useUpdateTemplateMetadata() {
+	const [status, setStatus] = useState<QueryStatus<ApiError>>({ type: "idle" });
+	const { mutate } = useSWRConfig();
+
+	const updateTemplateMetadata = useCallback(
+		async ({
+			currentName,
+			newName,
+			description,
+		}: {
+			currentName: string;
+			newName?: string;
+			description?: string;
+		}): Promise<TemplateMeta | null> => {
+			setStatus({ type: "loading" });
+			try {
+				const body: Record<string, string> = {};
+				if (newName && newName !== currentName) {
+					body.name = newName;
+				}
+				if (description !== undefined) {
+					body.description = description;
+				}
+
+				const result = await mutate(
+					`/templates/${currentName}`,
+					fetchApi(`/templates/${currentName}`, {
+						method: "POST",
+						body: JSON.stringify(body),
+					}).then((res) =>
+						promiseOrThrow<TemplateMeta, ApiError>(res.json(), () => ({
+							type: "INTERNAL",
+						})),
+					),
+					{
+						populateCache: (newTemplate, currentTemplate) => ({
+							...currentTemplate,
+							...newTemplate,
+						}),
+						revalidate: false,
+						throwOnError: true,
+					},
+				);
+
+				setStatus({ type: "ok" });
+
+				return result ?? null;
+			} catch (err: unknown) {
+				setStatus({ type: "error", error: err as ApiError });
+				return null;
+			}
+		},
+		[mutate],
+	);
+
+	return { updateTemplateMetadata, status };
 }
 
 function useTemplateFile(templateName: string, filePath: string) {
@@ -188,6 +247,7 @@ export {
 	useTemplate,
 	useTemplateFile,
 	useCreateTemplate,
+	useUpdateTemplateMetadata,
 	useUpdateTemplateFile,
 	buildTemplate,
 	useDeleteTemplate,

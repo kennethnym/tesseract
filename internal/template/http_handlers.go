@@ -19,6 +19,7 @@ type createTemplateRequestBody struct {
 }
 
 type postTemplateRequestBody struct {
+	Name        *string        `json:"name"`
 	Description *string        `json:"description"`
 	Files       []templateFile `json:"files"`
 
@@ -114,12 +115,21 @@ func updateTemplate(c echo.Context, body postTemplateRequestBody) error {
 	mgr := templateManagerFrom(c)
 	ctx := c.Request().Context()
 
-	updatedTemplate, err := mgr.updateTemplate(ctx, name, updateTemplateOptions{
-		description: *body.Description,
-	})
+	var opts updateTemplateOptions
+	if body.Name != nil {
+		opts.name = *body.Name
+	}
+	if body.Description != nil {
+		opts.description = *body.Description
+	}
+
+	updatedTemplate, err := mgr.updateTemplate(ctx, name, opts)
 	if err != nil {
 		if errors.Is(err, errTemplateNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound)
+		}
+		if errors.Is(err, errTemplateExists) {
+			return echo.NewHTTPError(http.StatusConflict)
 		}
 		return err
 	}

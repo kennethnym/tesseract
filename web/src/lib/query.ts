@@ -15,6 +15,10 @@ interface OkStatus {
 	type: "ok";
 }
 
-type QueryStatus = IdleStatus | LoadingStatus | ErrorStatus | OkStatus;
+type QueryStatus<TErr = unknown> =
+	| IdleStatus
+	| LoadingStatus
+	| ErrorStatus<TErr>
+	| OkStatus;
 
 export type { QueryStatus, IdleStatus, LoadingStatus, ErrorStatus, OkStatus };
