@@ -7,8 +7,8 @@ import { SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { Toaster } from "@/components/ui/toaster";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
-import { WorkspaceTable } from "./workspace-table";
 import { NewWorkspaceDialog } from "./new-workspace-dialog";
+import { WorkspaceTable } from "./workspace-table";
 
 function WorkspaceDashboard() {
 	return (

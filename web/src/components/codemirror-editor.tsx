@@ -1,5 +1,5 @@
+import { useUiMode } from "@/hooks/use-ui-mode";
 import { markdown } from "@codemirror/lang-markdown";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { StreamLanguage } from "@codemirror/language";
 import { dockerFile } from "@codemirror/legacy-modes/mode/dockerfile";
 import {
@@ -8,10 +8,10 @@ import {
 	type Extension,
 	type StateEffect,
 } from "@codemirror/state";
+import { oneDark } from "@codemirror/theme-one-dark";
 import { vim } from "@replit/codemirror-vim";
 import { EditorView, basicSetup } from "codemirror";
 import { useEffect, useRef } from "react";
-import { useUiMode } from "@/hooks/use-ui-mode";
 
 type CodeMirrorEditorSupportedLanguage = "markdown" | "dockerfile";
 

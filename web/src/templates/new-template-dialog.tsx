@@ -1,26 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import {
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import {
 	Form,
+	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
-	FormControl,
-	FormDescription,
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { superstructResolver } from "@hookform/resolvers/superstruct";
-import {
-	DialogContent,
-	DialogTitle,
-	DialogDescription,
-} from "@/components/ui/dialog";
-import { useRouter } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { nonempty, object, pattern, string, type Infer } from "superstruct";
-import { useBaseTemplates, useCreateTemplate } from "./api";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
 	Select,
 	SelectContent,
@@ -28,10 +23,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import type { BaseTemplate } from "./types";
-import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { superstructResolver } from "@hookform/resolvers/superstruct";
+import { useRouter } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { type Infer, nonempty, object, pattern, string } from "superstruct";
+import { useBaseTemplates, useCreateTemplate } from "./api";
+import type { BaseTemplate } from "./types";
 
 const NewTemplateForm = object({
 	baseTemplate: nonempty(string()),

@@ -4,10 +4,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { useContext } from "react";
-import { WorkspaceTableRowContext } from "./workspace-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useContext } from "react";
 import { PortInfoTab } from "./workspace-port-info-tab";
+import { WorkspaceTableRowContext } from "./workspace-table";
 
 function WorkspaceInfoDialog() {
 	const workspace = useContext(WorkspaceTableRowContext);

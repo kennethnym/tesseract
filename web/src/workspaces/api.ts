@@ -1,13 +1,13 @@
 import { fetchApi } from "@/api";
+import type { QueryStatus } from "@/lib/query";
+import { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import {
-	WorkspaceStatus,
 	type Workspace,
 	type WorkspacePortMapping,
 	type WorkspaceRuntime,
+	WorkspaceStatus,
 } from "./types";
-import { useCallback, useState } from "react";
-import type { QueryStatus } from "@/lib/query";
 
 interface CreateWorkspaceConfig {
 	workspaceName: string;

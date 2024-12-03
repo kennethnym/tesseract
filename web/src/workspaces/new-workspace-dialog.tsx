@@ -1,36 +1,36 @@
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { API_ERROR_WORKSPACE_EXISTS, isApiErrorResponse } from "@/api";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
 	Form,
+	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
-	FormControl,
-	FormDescription,
 	FormMessage,
 } from "@/components/ui/form";
-import {
-	Select,
-	SelectTrigger,
-	SelectValue,
-	SelectContent,
-	SelectItem,
-} from "@/components/ui/select";
-import { ToastAction } from "@/components/ui/toast";
-import { DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { useTemplateImages } from "@/templates/api";
-import { superstructResolver } from "@hookform/resolvers/superstruct";
-import { useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { nonempty, object, pattern, string, type Infer } from "superstruct";
-import { useCreateWorkspace, useWorkspaceRuntimes } from "./api";
 import type { TemplateImage } from "@/templates/types";
+import { superstructResolver } from "@hookform/resolvers/superstruct";
+import { useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { type Infer, nonempty, object, pattern, string } from "superstruct";
+import { useCreateWorkspace, useWorkspaceRuntimes } from "./api";
 import type { WorkspaceRuntime } from "./types";
-import { API_ERROR_WORKSPACE_EXISTS, isApiErrorResponse } from "@/api";
 
 interface NewWorkspaceDialogProps {
 	onCreateSuccess: () => void;

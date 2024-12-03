@@ -1,23 +1,23 @@
 import { Button } from "@/components/ui/button";
-import { FormField, FormItem, FormControl, Form } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
-	TableHeader,
-	TableRow,
-	TableHead,
+	Table,
 	TableBody,
 	TableCell,
-	Table,
+	TableHead,
+	TableHeader,
+	TableRow,
 } from "@/components/ui/table";
 import { superstructResolver } from "@hookform/resolvers/superstruct";
 import { Check, Trash2, X } from "lucide-react";
 import { useContext, useId } from "react";
 import { useForm } from "react-hook-form";
-import { object, pattern, string, size, number, type Infer } from "superstruct";
-import { WorkspaceTableRowContext } from "./workspace-table";
+import { type Infer, number, object, pattern, size, string } from "superstruct";
 import { create } from "zustand";
 import { useAddWorkspacePort } from "./api";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { WorkspaceTableRowContext } from "./workspace-table";
 
 interface PortInfoTabStore {
 	isAddingPort: boolean;

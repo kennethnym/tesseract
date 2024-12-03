@@ -1,13 +1,13 @@
+import { type ApiError, fetchApi } from "@/api";
+import { promiseOrThrow } from "@/lib/errors";
 import { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import type {
-	Template,
-	TemplateMeta,
-	TemplateImage,
 	BaseTemplate,
+	Template,
+	TemplateImage,
+	TemplateMeta,
 } from "./types";
-import { ApiError, fetchApi } from "@/api";
-import { promiseOrThrow } from "@/lib/errors";
 
 function useTemplates() {
 	return useSWR(

@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Hammer } from "lucide-react";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Hammer, Loader2 } from "lucide-react";
 import { useEffect, useId } from "react";
 import { BuildTemplateDialog } from "./build-template-dialog";
 import { useTemplateEditorStore } from "./template-editor-store";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 function TemplateEditorTopBar() {
 	const currentFilePath = useTemplateEditorStore(

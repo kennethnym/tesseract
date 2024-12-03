@@ -19,9 +19,9 @@ import { ToastAction } from "@radix-ui/react-toast";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import React from "react";
 import { useDeleteTemplate, useTemplates } from "./api";
 import { NewTemplateDialog } from "./new-template-dialog";
-import React from "react";
 
 function TemplatesDashboard() {
 	return (

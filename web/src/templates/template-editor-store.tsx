@@ -1,8 +1,8 @@
-import { createStore, useStore } from "zustand";
-import type { Template } from "./types";
+import { type ApiErrorDetails, isApiErrorResponse } from "@/api";
 import { createContext, useContext } from "react";
+import { createStore, useStore } from "zustand";
 import { buildTemplate } from "./api";
-import { isApiErrorResponse, type ApiErrorResponse } from "@/api";
+import type { Template } from "./types";
 
 interface TemplateEditorState {
 	template: Template;
@@ -11,7 +11,7 @@ interface TemplateEditorState {
 	isBuildOutputVisible: boolean;
 	isVimModeEnabled: boolean;
 	buildOutput: string;
-	buildError: ApiErrorResponse | null;
+	buildError: ApiErrorDetails | null;
 
 	startBuild: ({
 		imageTag,
