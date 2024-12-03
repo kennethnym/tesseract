@@ -59,6 +59,8 @@ function useCreateTemplate() {
 			description: string;
 			baseTemplate: string;
 		}): Promise<Template | null> => {
+			setIsCreating(true);
+
 			try {
 				const res = await fetchApi(`/templates/${name}`, {
 					method: "PUT",
