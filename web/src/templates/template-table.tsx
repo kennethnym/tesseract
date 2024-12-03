@@ -2,19 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
-	TableHeader,
-	TableRow,
-	TableHead,
 	TableBody,
 	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@radix-ui/react-toast";
+import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Pencil, Trash2 } from "lucide-react";
 import React, { useEffect } from "react";
-import { useTemplates, useDeleteTemplate } from "./api";
-import { Link } from "@tanstack/react-router";
+import { useDeleteTemplate, useTemplates } from "./api";
 import type { TemplateMeta } from "./types";
 
 const TemplateTable = React.memo(_TemplateTable, () => true);
