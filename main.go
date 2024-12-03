@@ -68,13 +68,12 @@ func main() {
 	cancel()
 
 	apiServer := echo.New()
+	apiServer.Use(services.ReverseProxy.Middleware(), services.Middleware(), middleware.CORS())
 	apiServer.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		HTML5:      true,
 		Root:       "web/dist",
 		Filesystem: http.FS(web),
 	}))
-
-	apiServer.Use(services.ReverseProxy.Middleware(), services.Middleware(), middleware.CORS())
 
 	g := apiServer.Group("/api")
 	workspace.DefineRoutes(g, services)
