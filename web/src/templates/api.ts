@@ -1,5 +1,6 @@
 import { type ApiError, fetchApi } from "@/api";
 import { promiseOrThrow } from "@/lib/errors";
+import type { QueryStatus } from "@/lib/query";
 import { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import type {
@@ -8,7 +9,7 @@ import type {
 	TemplateImage,
 	TemplateMeta,
 } from "./types";
-import { QueryStatus } from "@/lib/query";
+import { setDefaultAutoSelectFamilyAttemptTimeout } from "net";
 
 function useTemplates() {
 	return useSWR(
@@ -27,22 +28,32 @@ function useTemplate(name: string) {
 }
 
 function useDeleteTemplate() {
+	const [status, setStatus] = useState<QueryStatus<ApiError>>({ type: "idle" });
 	const { mutate } = useSWRConfig();
+
 	const deleteTemplate = useCallback(
 		async (templateName: string) => {
-			mutate(
-				"/templates",
-				fetchApi(`/templates/${templateName}`, { method: "DELETE" }),
-				{
-					populateCache: (_, templates) =>
-						templates?.filter((it: TemplateMeta) => it.name !== templateName),
-					revalidate: false,
-				},
-			);
+			setStatus({ type: "loading" });
+			try {
+				await mutate(
+					"/templates",
+					fetchApi(`/templates/${templateName}`, { method: "DELETE" }),
+					{
+						populateCache: (_, templates) =>
+							templates?.filter((it: TemplateMeta) => it.name !== templateName),
+						revalidate: false,
+						throwOnError: true,
+					},
+				);
+				setStatus({ type: "ok" });
+			} catch (error: unknown) {
+				setStatus({ type: "error", error: error as ApiError });
+			}
 		},
 		[mutate],
 	);
-	return deleteTemplate;
+
+	return { deleteTemplate, status };
 }
 
 function useCreateTemplate() {
