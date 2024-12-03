@@ -55,7 +55,7 @@ function useCreateWorkspace() {
 				setStatus({ type: "ok" });
 				return workspace ?? null;
 			} catch (error: unknown) {
-				setStatus({ type: "error", error });
+				setStatus({ type: "error", error: error as ApiError });
 				return null;
 			}
 		},
