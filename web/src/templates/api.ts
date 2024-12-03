@@ -9,7 +9,6 @@ import type {
 	TemplateImage,
 	TemplateMeta,
 } from "./types";
-import { setDefaultAutoSelectFamilyAttemptTimeout } from "net";
 
 function useTemplates() {
 	return useSWR(
