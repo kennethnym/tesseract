@@ -117,8 +117,11 @@ function NewWorkspaceForm({
 	runtimes: WorkspaceRuntime[];
 	onCreateSuccess: () => void;
 }) {
+	const { createWorkspace, status } = useCreateWorkspace();
+	const isCreating = status.type === "loading";
 	const form = useForm({
 		resolver: superstructResolver(NewWorkspaceFormSchema),
+		disabled: isCreating,
 		defaultValues: {
 			workspaceName: "",
 			// image is in the form "imageTag imageId" (space as separator)
@@ -127,7 +130,6 @@ function NewWorkspaceForm({
 			runtime: "",
 		},
 	});
-	const { createWorkspace, status } = useCreateWorkspace();
 	const { toast } = useToast();
 	const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -261,7 +263,10 @@ function NewWorkspaceForm({
 				/>
 
 				<DialogFooter>
-					<Button type="submit">Create</Button>
+					<Button disabled={isCreating} type="submit">
+						{isCreating ? <LoadingSpinner /> : null}
+						Create
+					</Button>
 				</DialogFooter>
 			</form>
 		</Form>
