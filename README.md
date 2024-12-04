@@ -23,6 +23,7 @@ i am open to feature requests. however, limited time/effort will be spent on thi
 
 - [Features](#features)
 - [Installation](#installation)
+- [Running tesseract](#running-tesseract)
 - [Configuration](#configuration)
 - [User guide](#user-guide)
     - [Creating a template](#creating-a-template)
@@ -30,6 +31,7 @@ i am open to feature requests. however, limited time/effort will be spent on thi
     - [Port forwarding](#port-forwarding)
     - [SSH access](#ssh-access)
     - [Docker runtime](#docker-runtime)
+    - [Data backup](#data-backup)
 
 ## Features
 
@@ -181,3 +183,11 @@ your host machine. Below is a table that lists some Docker runtimes and what fea
 
 > [!WARNING]
 > I don't have access to an nvidia machine to verify whether nvidia-container-toolkit works well with tesseract, but it should work on paper. Please donate to my kofi or GitHub sponsor if you want me to test it out.
+
+### Data backup
+
+To back up tesseract's data, back up `data.sqlite`. By default it sits next to the `tesseract` binary,
+but if you specified a different path in `config.json`, follow the path and back up `data.sqlite`.
+
+> [!IMPORTANT]
+> This does NOT backup workspace data!
