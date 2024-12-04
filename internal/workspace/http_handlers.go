@@ -126,6 +126,10 @@ func updateWorkspace(c echo.Context, workspace *workspace) error {
 
 	if len(body.PortMappings) > 0 {
 		if err = mgr.addPortMappings(ctx, workspace, body.PortMappings); err != nil {
+			var errPortMappingConflicts *errPortMappingConflicts
+			if errors.As(err, &errPortMappingConflicts) {
+				return apierror.New(http.StatusConflict, "PORT_MAPPINGS_EXIST", err.Error())
+			}
 			return err
 		}
 	}

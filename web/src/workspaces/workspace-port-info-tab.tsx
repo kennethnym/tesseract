@@ -94,6 +94,7 @@ const NewPortMappingForm = object({
 
 function NewPortMappingRow() {
 	const { addWorkspacePort, status } = useAddWorkspacePort();
+	const { toast } = useToast();
 	const workspace = useContext(WorkspaceTableRowContext);
 	const isAddingPort = useStore((state) => state.isAddingPort);
 	const setIsAddingPort = useStore((state) => state.setIsAddingPort);
@@ -107,6 +108,42 @@ function NewPortMappingRow() {
 		},
 	});
 
+	useEffect(() => {
+		switch (status.type) {
+			case "error":
+				switch (status.error.type) {
+					case "CONFLICT":
+						toast({
+							variant: "destructive",
+							title: "Subdomain already in use!",
+							description: "Please use another subdomain for this port.",
+						});
+						break;
+
+					case "NETWORK":
+						toast({
+							variant: "destructive",
+							title: "Failed to forward port.",
+							description: "Network error.",
+						});
+						break;
+
+					default:
+						toast({
+							variant: "destructive",
+							title: "Failed to forward port.",
+							description: "Unkown error.",
+						});
+						break;
+				}
+				break;
+
+			case "ok":
+				setIsAddingPort(false);
+				break;
+		}
+	}, [status]);
+
 	if (!isAddingPort) {
 		return null;
 	}
@@ -118,7 +155,6 @@ function NewPortMappingRow() {
 				port: values.port,
 			},
 		]);
-		setIsAddingPort(false);
 	}
 
 	return (

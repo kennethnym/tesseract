@@ -5,7 +5,7 @@ import "fmt"
 type APIError struct {
 	StatusCode int    `json:"-"`
 	Code       string `json:"code"`
-	Message    string `json:"error"`
+	Message    string `json:"error,omitempty"`
 }
 
 func New(status int, code, message string) *APIError {

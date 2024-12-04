@@ -43,9 +43,14 @@ func (p *ReverseProxy) Middleware() echo.MiddlewareFunc {
 	}
 }
 
-func (p *ReverseProxy) AddEntry(subdomain string, url *url.URL) {
+func (p *ReverseProxy) AddEntry(subdomain string, url *url.URL) error {
+	_, ok := p.httpProxies[subdomain]
+	if ok {
+		return ErrPortMappingConflict
+	}
 	proxy := httputil.NewSingleHostReverseProxy(url)
 	p.httpProxies[subdomain] = proxy
+	return nil
 }
 
 func (p *ReverseProxy) RemoveEntry(subdomain string) {

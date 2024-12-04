@@ -165,7 +165,7 @@ function useDeleteWorkspace() {
 }
 
 function useAddWorkspacePort() {
-	const [status, setStatus] = useState<QueryStatus>({ type: "idle" });
+	const [status, setStatus] = useState<QueryStatus<ApiError>>({ type: "idle" });
 	const { mutate } = useSWRConfig();
 
 	const addWorkspacePort = useCallback(
@@ -191,7 +191,7 @@ function useAddWorkspacePort() {
 				);
 				setStatus({ type: "ok" });
 			} catch (error: unknown) {
-				setStatus({ type: "error", error });
+				setStatus({ type: "error", error: error as ApiError });
 			}
 		},
 		[mutate],

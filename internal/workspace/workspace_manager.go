@@ -347,9 +347,23 @@ func (mgr workspaceManager) addPortMappings(ctx context.Context, workspace *work
 		return err
 	}
 
+	var conflictErr errPortMappingConflicts
+
 	for i := range portMappings {
-		portMappings[i].WorkspaceID = workspace.ID
-		mgr.reverseProxy.AddEntry(portMappings[i].Subdomain, urls[i])
+		err = mgr.reverseProxy.AddEntry(portMappings[i].Subdomain, urls[i])
+		if err != nil {
+			if errors.Is(err, reverseproxy.ErrPortMappingConflict) {
+				conflictErr.conflicts = append(conflictErr.conflicts, portMappings[i].Subdomain)
+			} else {
+				return err
+			}
+		} else {
+			portMappings[i].WorkspaceID = workspace.ID
+		}
+	}
+
+	if len(conflictErr.conflicts) > 0 {
+		return &conflictErr
 	}
 
 	_, err = tx.NewInsert().Model(&portMappings).Exec(ctx)
