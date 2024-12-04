@@ -45,14 +45,38 @@ i am open to feature requests. however, limited time/effort will be spent on thi
 > [!IMPORTANT]
 > Before installing tesseract, make sure that your machine has docker installed.
 
+### Using the installation script
+
 Run the following command:
 
 ```sh
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/kennethnym/tesseract/refs/heads/master/scripts/install.sh)"
 ```
 
-The installation script will install tesseract to `/opt/tesseract/`. To start tesseract, run the `tesseract` binary,
-which runs tesseract in foreground.
+The installation script will install tesseract to `/opt/tesseract/`.
+After the script finishes, update the `"hostName"` config in `/opt/tesseract/config.json`
+
+### Manual installation
+
+1. Download the appropriate binary from the [releases page](https://github.com/kennethnym/tesseract/releases/).
+2. Extract the file to wherever you want (`/opt/tesseract` is used for the installation script)
+3. Create a file named `config.json` and paste the content below
+4. Update the `"hostName"` config to the host name of the server running tesseract (e.g. tesseract.myserver.lab)
+
+Content of config.json:
+
+```json
+{
+  "port": 80,
+  "databasePath": "./data.sqlite",
+  "hostName": "HOSTNAME",
+  "debug": false
+}
+```
+
+## Running tesseract
+
+To start tesseract, run the `tesseract` binary, which runs tesseract in foreground.
 
 You can also run tesseract in the background:
 
@@ -62,6 +86,11 @@ nohup ./tesseract > ~/tesseract.log 2>&1 &
 ```
 
 Write down the PID so that you can kill it later.
+
+
+## Uninstallation
+
+Remove `/opt/tesseract` or the directory containing the tesseract binary and related files.
 
 ## Configuration
 
